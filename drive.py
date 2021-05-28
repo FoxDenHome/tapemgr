@@ -1,4 +1,4 @@
-from subprocess import call
+from subprocess import call, check_output
 
 class Drive():
     def __init__(self, dev):
@@ -21,10 +21,13 @@ class Drive():
         self.unmount()
         call(['/opt/tape/TapeTool.sh', 'load', self.sgid])
 
-    def init(self, barcode, name):
+    def read_label(self):
+        return check_output(['lto-cm', '-f', self.dev, '-r', '2051']).strip()
+
+    def init(self, label):
         self.unmount()
         self.set_encryption(True)
-        call(['mkltfs', '--device=%s' % self.dev, '-s', barcode, '-n', name, '-f'])
+        call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-f'])
 
     def mount(self, mountpoint='/mnt/tape'):
         self.unmount()
