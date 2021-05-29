@@ -66,6 +66,7 @@ def backup_file(name):
         if name in tape.files and tape.files[name] >= fstat.st_mtime:
             return
 
+    current_tape = get_current_tape()
     if fstat.st_size >= current_tape.free - TAPE_SIZE_SPARE:
         # Find new tape!
         return
@@ -79,7 +80,6 @@ load_tapes()
 if argv[1] == '--format':
     format_current_tape()
 elif argv[1] == '--store':
-    current_tape = get_current_tape()
     drive.mount(TAPE_MOUNT)
     backup_file(argv[2])
     drive.unmount()
