@@ -138,6 +138,9 @@ def format_size(size):
         size /= 1024.0
     return '%.1f %sB' % (size, 'Yi')
 
+def format_mtime(mtime):
+    return '%s' % mtime
+
 if argv[1] == 'format':
     format_current_tape()
 elif argv[1] == 'store':
@@ -166,6 +169,20 @@ elif argv[1] == 'list':
     for name, info_tuple in files.items():
         info, tape = info_tuple
         print('%s [%s]' % (name, tape.label))
+elif argv[1] == 'find':
+    best_info = None
+    best_tape = None
+    for _, tape in tapes.items():
+        for name, info in tape.files.items():
+            print('Found copy of file on "%s", size %s, mtime %s' % (tape.label, format_size(info.size), format_mtime(info.mtime)))
+            if best_info is not None and best_info.is_better_than(info):
+                continue
+            best_info = info
+            best_tape = tape
+    if best_tape is not None:
+        print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.label, format_size(info.size), format_mtime(info.mtime)))
+    else:
+        print('Could not find that file :(')
 elif argv[1] == 'mount':
     current_tape = get_current_tape(create_new=True)
     if current_tape is not None:
