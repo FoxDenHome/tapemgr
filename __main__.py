@@ -38,6 +38,7 @@ def make_tape_label():
 
 def ask_for_tape(label):
     global current_tape
+
     if label is None:
         drive.eject()
         input('Please insert new/unused/blank tape and press return!')
