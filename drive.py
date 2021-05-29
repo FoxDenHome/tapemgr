@@ -1,4 +1,5 @@
 from subprocess import call, check_output
+from time import sleep
 
 class Drive:
     def __init__(self, dev):
@@ -45,4 +46,5 @@ class Drive:
             return False
         call(['umount', self.mountpoint])
         self.mountpoint = None
+        sleep(60)
         return True
