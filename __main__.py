@@ -42,8 +42,9 @@ def ask_for_tape(label):
 
     if label is None:
         drive.eject()
-        input('Please insert new/unused/blank tape and press return!')
-        format_current_tape()
+        new_label = make_tape_label()
+        input('Please insert new/unused/blank tape and press return! (label will be "%d")' % new_label)
+        format_current_tape(new_label)
         current_tape = get_current_tape()
         return
 
@@ -68,10 +69,11 @@ def get_current_tape(create_new=False):
         return None
     return tapes[label]
 
-def format_current_tape():
+def format_current_tape(label=None):
     if get_current_tape():
         raise ValueError('Tape is already in this program!')
-    label = make_tape_label()
+    if label is None:
+        label = make_tape_label()
     drive.format(label)
 
     tape = Tape(label)
