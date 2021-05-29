@@ -30,6 +30,9 @@ def make_tape_label():
         if label not in tapes:
             return label
 
+def barcode_from_label(label):
+    return '%sL6' % label
+
 def ask_for_tape(label):
     global current_tape
 
@@ -69,7 +72,7 @@ def format_current_tape(label=None, mount=False):
         raise ValueError('Tape is already in this program!')
     if label is None:
         label = make_tape_label()
-    drive.format(label)
+    drive.format(label, barcode_from_label(label))
 
     tape = Tape(label)
     tape.verify_in_drive(drive)
