@@ -52,13 +52,17 @@ def ask_for_tape(label):
         drive.eject()
         input('Please insert tape "%s" and press return!' % label)
 
-def get_current_tape():
+def get_current_tape(create_new=False):
     try:
         drive.read_label()
     except:
         drive.load()
     label = drive.read_label()
     if not label in tapes:
+        if create_new:
+            tape = Tape(label)
+            tapes[label] = tape
+            return tape
         return None
     return tapes[label]
 
@@ -154,7 +158,7 @@ elif argv[1] == 'store':
         drive.unmount()
         save_tapes()
 elif argv[1] == 'index':
-    current_tape = get_current_tape()
+    current_tape = get_current_tape(create_new=True)
     current_tape.read_data(drive, TAPE_MOUNT)
     save_tapes()
 elif argv[1] == 'list':
