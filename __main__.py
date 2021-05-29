@@ -174,6 +174,8 @@ elif argv[1] == 'find':
     best_tape = None
     for _, tape in tapes.items():
         for name, info in tape.files.items():
+            if name != argv[2]:
+                continue
             print('Found copy of file on "%s", size %s, mtime %s' % (tape.label, format_size(info.size), format_mtime(info.mtime)))
             if best_info is not None and best_info.is_better_than(info):
                 continue
