@@ -20,11 +20,11 @@ def save_tapes():
 def load_tapes():
     global tapes
     try:
-        fh = open('tapes.dat', 'wb')
+        fh = open('tapes.dat', 'rb')
         tapes = load(fh)
         fh.close()
     except:
-        pass  
+        pass
 
 def make_tape_label():
     idx = 0
