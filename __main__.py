@@ -82,6 +82,7 @@ def backup_file(file):
 
     for _, tape in tapes.items():
         if name in tape.files and tape.files[name] >= fstat.st_mtime:
+            print('[SKIP] %s' % name)
             return
 
     min_size = fstat.st_size + TAPE_SIZE_SPARE
@@ -96,6 +97,7 @@ def backup_file(file):
         if not found_existing_tape:
             ask_for_tape(None)
 
+    print('[STOR] %s' % name)
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', '-p', name, '%s%s' % (TAPE_MOUNT, name)])
     current_tape.files[name] = fstat.st_mtime
