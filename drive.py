@@ -33,6 +33,7 @@ class Drive():
         if self.mountpoint == mountpoint:
             return False
         self.unmount()
+        self.load()
         self.set_encryption(True)
         self.mountpoint = mountpoint
         call(['ltfs', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
