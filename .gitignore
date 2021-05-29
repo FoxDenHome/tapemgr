@@ -1,4 +1,3 @@
 __pycache__
 *.pyc
-/tapes/*
-!/tapes/.keep
+/tapes
