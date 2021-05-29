@@ -90,7 +90,7 @@ def backup_file(file):
     finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
     for _, tape in tapes.items():
-        if name in tape.files and finfo.is_better_than(tape.files[name]):
+        if name in tape.files and not finfo.is_better_than(tape.files[name]):
             print('[SKIP] %s' % name)
             return
 
