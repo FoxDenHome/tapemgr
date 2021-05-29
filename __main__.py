@@ -52,7 +52,7 @@ def format_current_tape():
 
     tape = Tape(label)
     tape.verify_in_drive(drive)
-    tape.read_data(drive)
+    tape.read_data(drive, TAPE_MOUNT)
     tapes[label] = tape
     save_tapes()
 
@@ -80,7 +80,7 @@ if argv[1] == '--format':
     format_current_tape()
 elif argv[1] == '--store':
     current_tape = get_current_tape()
-    drive.mount()
+    drive.mount(TAPE_MOUNT)
     backup_file(argv[2])
     drive.unmount()
 elif argv[1] == '--list':

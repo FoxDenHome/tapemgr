@@ -12,7 +12,7 @@ class Tape():
         if found_label != self.label:
             raise ValueError('Please insert tape "%s" into drive (current: %s)!' % (self.label, found_label))
 
-    def read_data(self, drive, mountpoint='/mnt/tape'):
+    def read_data(self, drive, mountpoint):
         self.verify_in_drive(drive)
         did_mount = drive.mount(mountpoint)
 
