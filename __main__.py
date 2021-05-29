@@ -95,6 +95,7 @@ def backup_file(file):
     while current_tape is None or current_tape.free < min_size:
         if current_tape is not None:
             current_tape.read_data(drive, TAPE_MOUNT, False)
+            save_tapes()
         drive.unmount()
         # Find new tape!
         found_existing_tape = False
@@ -107,6 +108,7 @@ def backup_file(file):
             ask_for_tape(None)
         drive.mount(TAPE_MOUNT)
         current_tape.read_data(drive, TAPE_MOUNT, False)
+        save_tapes()
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
 
