@@ -118,4 +118,5 @@ elif argv[1] == 'list':
             files[name] = (mtime, tape)
 
     for name, info in files.items():
-        print("%s [%s]" % (name, info.tape.label))
+        mtime, tape = info
+        print("%s [%s]" % (name, tape.label))
