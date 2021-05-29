@@ -1,7 +1,7 @@
 from tape import FileInfo, Tape
 from drive import Drive
 from os import path, lstat, scandir
-from subprocess import call
+from subprocess import call, check_call
 from sys import argv
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes
@@ -127,9 +127,9 @@ def backup_file(file):
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
 
-    call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
+    check_call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', name, tape_name])
-    
+
     fstat_tape = lstat(tape_name)
     current_tape.files[name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
 

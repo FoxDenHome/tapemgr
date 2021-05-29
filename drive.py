@@ -1,4 +1,4 @@
-from subprocess import call, check_output
+from subprocess import check_call, check_output
 from time import sleep
 
 class Drive:
@@ -12,15 +12,15 @@ class Drive:
         self.sgid = fd.split(':')[1]
 
     def set_encryption(self, on):
-        call(['stenc', '-f', self.dev, '-e', 'on' if on else 'off', '-k', '/mnt/keydisk/tape.key', '-a', '1', '--ckod'])
+        check_call(['stenc', '-f', self.dev, '-e', 'on' if on else 'off', '-k', '/mnt/keydisk/tape.key', '-a', '1', '--ckod'])
 
     def eject(self):
         self.unmount()
-        call(['/opt/tape/TapeTool.sh', 'eject', self.sgid])
+        check_call(['/opt/tape/TapeTool.sh', 'eject', self.sgid])
 
     def load(self):
         self.unmount()
-        call(['/opt/tape/TapeTool.sh', 'load', self.sgid])
+        check_call(['/opt/tape/TapeTool.sh', 'load', self.sgid])
 
     def read_label(self):
         return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
@@ -29,7 +29,7 @@ class Drive:
         self.unmount()
         self.load()
         self.set_encryption(True)
-        call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', barcode, '-f'])
+        check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', barcode, '-f'])
 
     def mount(self, mountpoint):
         if self.mountpoint == mountpoint:
@@ -38,13 +38,13 @@ class Drive:
         self.load()
         self.set_encryption(True)
         self.mountpoint = mountpoint
-        call(['ltfs', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
+        check_call(['ltfs', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
         return True
 
     def unmount(self):
         if self.mountpoint is None:
             return False
-        call(['umount', self.mountpoint])
+        check_call(['umount', self.mountpoint])
         self.mountpoint = None
         sleep(60)
         return True
