@@ -1,14 +1,16 @@
 from tape import Tape
 from drive import Drive
-from os import path, lstat
+from os import path, lstat, scandir
 from subprocess import call
 from pickle import load, dump
 from sys import argv
+from stat import S_ISDIR, S_ISREG
 
 TAPE_MOUNT = '/mnt/tape'
 
 drive = Drive('nst0')
 tapes = {}
+current_tape = None
 
 TAPE_SIZE_SPARE = 1024 * 1024 # 1 MB
 
@@ -56,17 +58,18 @@ def format_current_tape():
     tapes[label] = tape
     save_tapes()
 
-def backup_file(name):
-    name = path.abspath(name)
+def backup_file(file):
+    global current_tape
+
+    name = path.abspath(file.path)
     dir = path.dirname(name)
 
-    fstat = lstat(name)
+    fstat = file.stat(follow_symlinks=False)
 
     for _, tape in tapes.items():
         if name in tape.files and tape.files[name] >= fstat.st_mtime:
             return
 
-    current_tape = get_current_tape()
     if fstat.st_size >= current_tape.free - TAPE_SIZE_SPARE:
         # Find new tape!
         return
@@ -75,15 +78,33 @@ def backup_file(name):
     call(['cp', '-p', name, '%s%s' % (TAPE_MOUNT, name)])
     current_tape.files[name] = fstat.st_mtime
 
+def backup_recursive(dir):
+    for file in scandir(dir):
+            stat = file.stat(follow_symlinks=False)
+            if S_ISDIR(stat.st_mode):
+                backup_recursive(file.path)
+            elif S_ISREG(stat.st_mode):
+                backup_file(file)
+
 load_tapes()
 
 if argv[1] == '--format':
     format_current_tape()
 elif argv[1] == '--store':
+    current_tape = get_current_tape()
     drive.mount(TAPE_MOUNT)
-    backup_file(argv[2])
-    drive.unmount()
-    save_tapes()
+    try:
+        name = argv[2]
+        stat = lstat(name)
+        if S_ISDIR(stat.st_mode):
+            backup_recursive(name)
+        elif S_ISREG(stat.st_mode):
+            backup_file(name)
+        else:
+            raise ValueError("Cannot backup file (not regular file or directory): %s" % name)
+    finally:
+        drive.unmount()
+        save_tapes()
 elif argv[1] == '--list':
     files = {}
     for _, tape in tapes.items():
