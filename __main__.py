@@ -119,6 +119,9 @@ def backup_recursive(dir):
 
 load_tapes()
 
+def format_size(size):
+    return '%s' % size
+
 if argv[1] == 'format':
     format_current_tape()
 elif argv[1] == 'store':
@@ -154,4 +157,4 @@ elif argv[1] == 'list':
         print("%s [%s]" % (name, tape.label))
 elif argv[1] == 'statistics':
     for label, tape in tapes.items():
-        print('[%s] Size = %d, Free = %d, Files = %d' % (label, tape.size, tape.free, len(tape.files)))
+        print('[%s] Size = %s, Free = %s (%.2f%%), Files = %d' % (label, format_size(tape.size), format_size(tape.free), (tape.free / tape.size) * 100.0, len(tape.files)))
