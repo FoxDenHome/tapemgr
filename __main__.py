@@ -116,10 +116,9 @@ def backup_file(file):
     tape_name = '%s%s' % (TAPE_MOUNT, name)
 
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
-    call(['cp', '-p', name, tape_name])
+    call(['cp', name, tape_name])
     current_tape.files[name] = finfo
-    fstat_tape = lstat(tape_name)
-    current_tape.free -= max(fstat_tape.st_size, (fstat_tape.st_blocks * 512))
+    current_tape.read_data(drive, TAPE_MOUNT, False)
     save_tapes()
 
 def backup_recursive(dir):
