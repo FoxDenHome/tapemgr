@@ -115,6 +115,7 @@ def backup_file(file):
     current_tape.files[name] = fstat.st_mtime
     fstat_tape = lstat(tape_name)
     current_tape.free -= fstat_tape.st_size
+    save_tapes()
 
 def backup_recursive(dir):
     for file in scandir(dir):
