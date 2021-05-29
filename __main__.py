@@ -86,7 +86,7 @@ def backup_file(file):
     finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
     for _, tape in tapes.items():
-        if name in tape.files and tape.files[name] == finfo:
+        if name in tape.files and finfo.is_better_than(tape.files[name]):
             print('[SKIP] %s' % name)
             return
 
@@ -161,16 +161,12 @@ elif argv[1] == 'list':
     files = {}
     for _, tape in tapes.items():
         for name, info in tape.files.items():
-            if name in files:
-                existing_info = files[name][1]
-                if existing_info.mtime > info.mtime:
-                    continue
-                if existing_info.mtime == info.mtime and existing_info.size >= info.size:
-                    continue
+            if name in files and not info.is_better_than(files[name][1]):
+                continue
             files[name] = (info, tape)
 
-    for name, info in files.items():
-        mtime, tape = info
+    for name, info_tuple in files.items():
+        info, tape = info_tuple
         print("%s [%s]" % (name, tape.label))
 elif argv[1] == 'statistics':
     for label, tape in tapes.items():

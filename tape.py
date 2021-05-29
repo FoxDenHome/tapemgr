@@ -17,6 +17,11 @@ class FileInfo:
     size: int
     mtime: int
 
+    def is_better_than(self, other):
+        if self.mtime == other.mtime:
+            return self.size > other.size
+        return self.mtime > other.mtime
+
 class Tape:
     def __init__(self, label):
         self.label = label
