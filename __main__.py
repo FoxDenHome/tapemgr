@@ -72,6 +72,7 @@ def format_current_tape():
     tape.read_data(drive, TAPE_MOUNT)
     tapes[label] = tape
     save_tapes()
+    print ('Formatted tape with label "%s"!' % label)
     return tape
 
 def backup_file(file):
