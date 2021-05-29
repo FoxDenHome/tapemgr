@@ -1,4 +1,15 @@
 from subprocess import check_output
+from os import scandir, path
+from stat import S_ISDIR, S_ISREG
+
+def dir_recurse(dir, tape, mountpoint_len):
+    for file in scandir(dir):
+            stat = file.stat(follow_symlinks=False)
+            if S_ISDIR(stat.st_mode):
+                dir_recurse(file.path, tape, mountpoint_len)
+            elif S_ISREG(stat.st_mode):
+                name = path.abspath(file.path)[mountpoint_len:]
+                tape.files[name] = stat.st_mtime
 
 class Tape():
     def __init__(self, label):
@@ -23,6 +34,7 @@ class Tape():
 
         # TODO: Read files
         self.files = {}
+        dir_recurse(mountpoint, self, len(mountpoint))
 
         if did_mount:
             drive.unmount()
