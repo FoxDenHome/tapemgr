@@ -26,6 +26,7 @@ class Drive():
 
     def format(self, label):
         self.unmount()
+        self.load()
         self.set_encryption(True)
         call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-f'])
 
