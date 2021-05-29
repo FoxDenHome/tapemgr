@@ -2,12 +2,11 @@ from tape import FileInfo, Tape
 from drive import Drive
 from os import path, lstat, scandir
 from subprocess import call
-from pickle import load, dump
 from sys import argv
 from stat import S_ISDIR, S_ISREG
+from storage import save_tape, load_all_tapes
 
 TAPE_MOUNT = '/mnt/tape'
-TAPES_DIR = path.join(path.dirname(__file__), 'tapes')
 
 drive = Drive('nst0')
 tapes = {}
@@ -15,34 +14,12 @@ current_tape = None
 
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 
-def save_tape(tape):
-    fh = open(path.join(TAPES_DIR, tape.label), 'wb')
-    dump(tape, fh)
-    fh.close()
-
 def save_all_tapes():
     for _, tape in tapes.items():
         save_tape(tape)
 
-def refresh_and_save_current_tape():
+def refresh_current_tape():
     current_tape.read_data(drive, TAPE_MOUNT, False)
-    save_tape(current_tape)
-
-def load_all_tapes():
-    global tapes
-    tapes = {}
-    for file in scandir(TAPES_DIR):
-        if not file.is_file():
-            continue
-        if file.name[0] == '.':
-            continue
-        try:
-            fh = open(file.path, 'rb')
-            tape = load(fh)
-            tapes[tape.label] = tape
-            fh.close()
-        except:
-            print('Error loading tape data "%s"' % file.name)
 
 def make_tape_label():
     idx = 0
@@ -118,7 +95,7 @@ def backup_file(file):
     min_size = fstat.st_size + TAPE_SIZE_SPARE
 
     if current_tape is not None and current_tape.free < min_size:
-        refresh_and_save_current_tape()
+        refresh_current_tape()
 
     while current_tape is None or current_tape.free < min_size:
         drive.unmount()
@@ -132,7 +109,7 @@ def backup_file(file):
         if not found_existing_tape:
             ask_for_tape(None)
         drive.mount(TAPE_MOUNT)
-        refresh_and_save_current_tape()
+        refresh_current_tape()
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
 
@@ -142,7 +119,7 @@ def backup_file(file):
     fstat_tape = lstat(tape_name)
     current_tape.files[name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
 
-    refresh_and_save_current_tape()
+    refresh_current_tape()
 
 def backup_recursive(dir):
     for file in scandir(dir):
@@ -178,7 +155,6 @@ elif argv[1] == 'store':
 elif argv[1] == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(drive, TAPE_MOUNT)
-    save_tape(current_tape)
 elif argv[1] == 'list':
     files = {}
     for _, tape in tapes.items():

@@ -2,6 +2,7 @@ from subprocess import check_output
 from os import scandir, path
 from stat import S_ISDIR, S_ISREG
 from dataclasses import dataclass
+from storage import save_tape
 
 def dir_recurse(dir, tape, mountpoint_len):
     for file in scandir(dir):
@@ -46,6 +47,8 @@ class Tape:
         if readfiles:
             self.files = {}
             dir_recurse(mountpoint, self, len(mountpoint))
+
+        save_tape(self)
 
         if did_mount:
             drive.unmount()
