@@ -1,6 +1,7 @@
 from subprocess import check_output
 from os import scandir, path
 from stat import S_ISDIR, S_ISREG
+from dataclasses import dataclass
 
 def dir_recurse(dir, tape, mountpoint_len):
     for file in scandir(dir):
@@ -9,9 +10,14 @@ def dir_recurse(dir, tape, mountpoint_len):
                 dir_recurse(file.path, tape, mountpoint_len)
             elif S_ISREG(stat.st_mode):
                 name = path.abspath(file.path)[mountpoint_len:]
-                tape.files[name] = stat.st_mtime
+                tape.files[name] = FileInfo(size=stat.st_size, mtime=stat.st_mtime)
 
-class Tape():
+@dataclass
+class FileInfo:
+    size: int
+    mtime: int
+
+class Tape:
     def __init__(self, label):
         self.label = label
         self.files = {}

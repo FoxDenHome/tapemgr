@@ -1,6 +1,6 @@
 from subprocess import call, check_output
 
-class Drive():
+class Drive:
     def __init__(self, dev):
         self.dev = '/dev/%s' % dev
         self.mountpoint = None

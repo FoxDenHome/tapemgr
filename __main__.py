@@ -85,17 +85,19 @@ def backup_file(file):
     fstat = file.stat(follow_symlinks=False)
 
     for _, tape in tapes.items():
-        if name in tape.files and tape.files[name] >= fstat.st_mtime:
+        if name in tape.files and tape.files[name] != fstat.st_mtime:
             print('[SKIP] %s' % name)
             return
 
     print('[STOR] %s' % name)
 
     min_size = fstat.st_size + TAPE_SIZE_SPARE
+
+    if current_tape is not None and current_tape.free < min_size:
+        current_tape.read_data(drive, TAPE_MOUNT, False)
+        save_tapes()
+
     while current_tape is None or current_tape.free < min_size:
-        if current_tape is not None:
-            current_tape.read_data(drive, TAPE_MOUNT, False)
-            save_tapes()
         drive.unmount()
         # Find new tape!
         found_existing_tape = False
@@ -116,7 +118,7 @@ def backup_file(file):
     call(['cp', '-p', name, tape_name])
     current_tape.files[name] = fstat.st_mtime
     fstat_tape = lstat(tape_name)
-    current_tape.free -= fstat_tape.st_size
+    current_tape.free -= (fstat_tape.st_blocks * 512)
     save_tapes()
 
 def backup_recursive(dir):
