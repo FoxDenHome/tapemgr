@@ -123,7 +123,10 @@ def backup_file(file):
 
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', name, tape_name])
-    current_tape.files[name] = finfo
+    
+    fstat_tape = lstat(tape_name)
+    current_tape.files[name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
+
     current_tape.read_data(drive, TAPE_MOUNT, False)
     save_tapes()
 
