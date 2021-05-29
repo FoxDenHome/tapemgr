@@ -170,9 +170,10 @@ elif argv[1] == 'mount':
     current_tape = get_current_tape(create_new=True)
     if current_tape is not None:
         drive.mount(TAPE_MOUNT)
-        print('Once done, run "umount %s"!' % TAPE_MOUNT)
+        print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.label, TAPE_MOUNT, TAPE_MOUNT))
     else:
         print('Do not recognize this tape!')
+        drive.eject()
 elif argv[1] == 'statistics':
     for label, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (label, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
