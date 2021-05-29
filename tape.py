@@ -23,7 +23,7 @@ class Tape():
         if found_label != self.label:
             raise ValueError('Please insert tape "%s" into drive (current: %s)!' % (self.label, found_label))
 
-    def read_data(self, drive, mountpoint):
+    def read_data(self, drive, mountpoint, readfiles=True):
         self.verify_in_drive(drive)
         did_mount = drive.mount(mountpoint)
 
@@ -32,9 +32,9 @@ class Tape():
         self.size = int(size)
         self.free = int(free)
 
-        # TODO: Read files
-        self.files = {}
-        dir_recurse(mountpoint, self, len(mountpoint))
+        if readfiles:
+            self.files = {}
+            dir_recurse(mountpoint, self, len(mountpoint))
 
         if did_mount:
             drive.unmount()

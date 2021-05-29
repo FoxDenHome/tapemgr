@@ -97,10 +97,14 @@ def backup_file(file):
         if not found_existing_tape:
             ask_for_tape(None)
 
+    tape_name = '%s%s' % (TAPE_MOUNT, name)
+
     print('[STOR] %s' % name)
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
-    call(['cp', '-p', name, '%s%s' % (TAPE_MOUNT, name)])
+    call(['cp', '-p', name, tape_name])
     current_tape.files[name] = fstat.st_mtime
+    fstat_tape = lstat(tape_name)
+    current_tape.free -= fstat_tape.st_size
 
 def backup_recursive(dir):
     for file in scandir(dir):
