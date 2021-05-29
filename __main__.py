@@ -5,6 +5,7 @@ from subprocess import call
 from sys import argv
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes
+from datetime import datetime
 
 TAPE_MOUNT = '/mnt/tape'
 
@@ -139,7 +140,8 @@ def format_size(size):
     return '%.1f %sB' % (size, 'Yi')
 
 def format_mtime(mtime):
-    return '%s' % mtime
+    time = datetime.fromtimestamp(mtime)
+    return time.strftime("%Y-%m-%d %H:%M:%S")
 
 if argv[1] == 'format':
     format_current_tape()
