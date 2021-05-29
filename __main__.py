@@ -74,7 +74,6 @@ def backup_file(name):
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', '-p', name, '%s%s' % (TAPE_MOUNT, name)])
     current_tape.files[name] = fstat.st_mtime
-    save_tapes()
 
 load_tapes()
 
@@ -84,6 +83,7 @@ elif argv[1] == '--store':
     drive.mount(TAPE_MOUNT)
     backup_file(argv[2])
     drive.unmount()
+    save_tapes()
 elif argv[1] == '--list':
     files = {}
     for _, tape in tapes.items():
