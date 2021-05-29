@@ -86,7 +86,7 @@ def backup_file(file):
             return
 
     min_size = fstat.st_size + TAPE_SIZE_SPARE
-    if current_tape.free < min_size:
+    if current_tape is None or current_tape.free < min_size:
         drive.unmount()
         # Find new tape!
         found_existing_tape = False
@@ -129,9 +129,6 @@ def format_size(size):
 if argv[1] == 'format':
     format_current_tape()
 elif argv[1] == 'store':
-    current_tape = get_current_tape()
-    drive.mount(TAPE_MOUNT)
-    current_tape.read_data(drive, TAPE_MOUNT, False)
     try:
         name = argv[2]
         stat = lstat(name)
