@@ -8,8 +8,9 @@ class Tape():
         self.free = 0
 
     def verify_in_drive(self, drive):
-        if drive.read_label() != self.label:
-            raise ValueError('Please insert tape "%s" into drive!' % self.label)
+        found_label = drive.read_label()
+        if found_label != self.label:
+            raise ValueError('Please insert tape "%s" into drive (current: %s)!' % (self.label, found_label))
 
     def read_data(self, drive, mountpoint='/mnt/tape'):
         self.verify_in_drive(drive)
