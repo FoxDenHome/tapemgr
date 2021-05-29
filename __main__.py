@@ -122,9 +122,9 @@ load_tapes()
 def format_size(size):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
         if size < 1024.0:
-            return '%3.1f%sB' % (size, unit)
+            return '%3.1f %sB' % (size, unit)
         size /= 1024.0
-    return '%.1f%sB' % (size, 'Yi')
+    return '%.1f %sB' % (size, 'Yi')
 
 if argv[1] == 'format':
     format_current_tape()
