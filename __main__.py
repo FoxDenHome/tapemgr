@@ -158,7 +158,7 @@ elif argv[1] == 'store':
             elif S_ISREG(stat.st_mode):
                 backup_file(name)
             else:
-                raise ValueError("Cannot backup file (not regular file or directory): %s" % name)
+                raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
         save_tapes()
@@ -176,7 +176,14 @@ elif argv[1] == 'list':
 
     for name, info_tuple in files.items():
         info, tape = info_tuple
-        print("%s [%s]" % (name, tape.label))
+        print('%s [%s]' % (name, tape.label))
+elif argv[1] == 'mount':
+    current_tape = get_current_tape(create_new=True)
+    if current_tape is not None:
+        drive.mount(TAPE_MOUNT)
+        print('Once done, run "umount %s"!' % TAPE_MOUNT)
+    else:
+        print('Do not recognize this tape!')
 elif argv[1] == 'statistics':
     for label, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (label, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
