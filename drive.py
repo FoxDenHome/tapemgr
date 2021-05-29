@@ -24,20 +24,24 @@ class Drive():
     def read_label(self):
         return check_output(['lto-cm', '-f', self.dev, '-r', '2051']).strip()
 
-    def init(self, label):
+    def format(self, label):
         self.unmount()
         self.set_encryption(True)
         call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-f'])
 
-    def mount(self, mountpoint='/mnt/tape'):
+    def mount(self, mountpoint):
+        if self.mountpoint == mountpoint:
+            return False
         self.unmount()
         self.set_encryption(True)
         self.mountpoint = mountpoint
         call(['ltfs', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
+        return True
 
     def unmount(self):
         if self.mountpoint is None:
-            return
+            return False
         call(['umount', self.mountpoint])
         self.set_encryption(False)
         self.mountpoint = None
+        return True
