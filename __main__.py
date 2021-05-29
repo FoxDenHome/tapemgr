@@ -13,7 +13,7 @@ drive = Drive('nst0')
 tapes = {}
 current_tape = None
 
-TAPE_SIZE_SPARE = 1024 * 1024 # 1 MB
+TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 
 def save_tapes():
     fh = open(TAPES_DAT_FILE, 'wb')
