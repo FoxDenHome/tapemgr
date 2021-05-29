@@ -1,4 +1,4 @@
-from tape import Tape
+from tape import FileInfo, Tape
 from drive import Drive
 from os import path, lstat, scandir
 from subprocess import call
@@ -83,9 +83,10 @@ def backup_file(file):
     dir = path.dirname(name)
 
     fstat = file.stat(follow_symlinks=False)
+    finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
     for _, tape in tapes.items():
-        if name in tape.files and tape.files[name] != fstat.st_mtime:
+        if name in tape.files and tape.files[name] == finfo:
             print('[SKIP] %s' % name)
             return
 
@@ -116,7 +117,7 @@ def backup_file(file):
 
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', '-p', name, tape_name])
-    current_tape.files[name] = fstat.st_mtime
+    current_tape.files[name] = finfo
     fstat_tape = lstat(tape_name)
     current_tape.free -= (fstat_tape.st_blocks * 512)
     save_tapes()
@@ -160,10 +161,14 @@ elif argv[1] == 'index':
 elif argv[1] == 'list':
     files = {}
     for _, tape in tapes.items():
-        for name, mtime in tape.files.items():
-            if name in files and files[name][1] >= mtime:
-                continue
-            files[name] = (mtime, tape)
+        for name, info in tape.files.items():
+            if name in files:
+                existing_info = files[name][1]
+                if existing_info.mtime > info.mtime:
+                    continue
+                if existing_info.mtime == info.mtime and existing_info.size >= info.size:
+                    continue
+            files[name] = (info, tape)
 
     for name, info in files.items():
         mtime, tape = info
