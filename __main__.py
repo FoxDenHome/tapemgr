@@ -33,13 +33,19 @@ def make_tape_label():
 def barcode_from_label(label):
     return '%sL6' % label
 
+def load_tape(label):
+    # Here we would tell a library/autoloader to load a specified tape by label
+    barcode = barcode_from_label(label)
+    return False
+
 def ask_for_tape(label):
     global current_tape
 
     if label is None:
         drive.eject()
         new_label = make_tape_label()
-        input('Please insert new/unused/blank tape and press return! (label will be "%d")' % new_label)
+        if not load_tape(new_label):
+            input('Please insert new/unused/blank tape and press return! (label will be "%d")' % new_label)
         format_current_tape(new_label, True)
         return
 
@@ -49,7 +55,8 @@ def ask_for_tape(label):
             drive.mount()
             return
         drive.eject()
-        input('Please insert tape "%s" and press return!' % label)
+        if not load_tape(label):
+            input('Please insert tape "%s" and press return!' % label)
 
 def get_current_tape(create_new=False):
     try:
