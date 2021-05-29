@@ -129,7 +129,7 @@ def backup_recursive(dir):
             elif S_ISREG(stat.st_mode):
                 backup_file(file)
 
-load_all_tapes()
+tapes = load_all_tapes()
 
 def format_size(size):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
