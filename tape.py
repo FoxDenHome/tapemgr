@@ -16,7 +16,7 @@ class Tape():
         self.verify_in_drive(drive)
         did_mount = drive.mount(mountpoint)
 
-        line = check_output('df', '-B1', mountpoint).split('\n')[1]
+        line = check_output(['df', '-B1', mountpoint]).decode().split('\n')[1]
         _, size, _, free = line.split()
         self.size = int(size)
         self.free = int(free)

@@ -22,7 +22,7 @@ class Drive():
         call(['/opt/tape/TapeTool.sh', 'load', self.sgid])
 
     def read_label(self):
-        return check_output(['lto-cm', '-f', self.dev, '-r', '2051']).strip()
+        return check_output(['lto-cm', '-f', self.dev, '-r', '2051']).decode().strip()
 
     def format(self, label):
         self.unmount()
