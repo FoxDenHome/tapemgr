@@ -174,7 +174,7 @@ elif argv[1] == 'list':
 
     for name, info_tuple in files.items():
         info, tape = info_tuple
-        print('%s [%s]' % (name, tape.label))
+        print('[%s] Name "%s", size %s, mtime %s' % (name, tape.label, format_size(info.size), format_mtime(info.mtime)))
 elif argv[1] == 'find':
     best_info = None
     best_tape = None
