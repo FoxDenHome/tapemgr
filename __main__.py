@@ -1,4 +1,5 @@
-from . import Drive, Tape
+from tape import Tape
+from drive import Drive
 from os import path, lstat
 from subprocess import call
 
