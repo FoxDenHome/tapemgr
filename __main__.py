@@ -36,6 +36,18 @@ def make_tape_label():
         if label not in tapes:
             return label
 
+def ask_for_tape(label):
+    global current_tape
+    if label is None:
+        drive.eject()
+        input('Please insert new/unused/blank tape and press return!')
+        return format_current_tape()
+
+    while current_tape is None or current_tape.label != label:
+        drive.eject()
+        input('Please insert tape "%s" and press return!')
+        current_tape = get_current_tape()
+
 def get_current_tape():
     try:
         drive.read_label()
@@ -57,6 +69,7 @@ def format_current_tape():
     tape.read_data(drive, TAPE_MOUNT)
     tapes[label] = tape
     save_tapes()
+    return tape
 
 def backup_file(file):
     global current_tape
