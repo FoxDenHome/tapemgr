@@ -17,7 +17,7 @@ class Tape():
         did_mount = drive.mount(mountpoint)
 
         line = check_output(['df', '-B1', mountpoint]).decode().split('\n')[1]
-        _, size, _, free = line.split()
+        _, size, _, free, _, _ = line.split()
         self.size = int(size)
         self.free = int(free)
 
