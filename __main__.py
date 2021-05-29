@@ -93,6 +93,10 @@ def backup_file(file):
         if name in tape.files and not finfo.is_better_than(tape.files[name]):
             print('[SKIP] %s' % name)
             return
+        if name in tape.files:
+            print("NOSKIP!")
+            print(finfo)
+            print(tape.files[name])
 
     print('[STOR] %s' % name)
 
