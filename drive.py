@@ -37,7 +37,7 @@ class Drive():
         self.load()
         self.set_encryption(True)
         self.mountpoint = mountpoint
-        call(['ltfs', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
+        call(['ltfs', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
         return True
 
     def unmount(self):
