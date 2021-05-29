@@ -88,9 +88,9 @@ def backup_recursive(dir):
 
 load_tapes()
 
-if argv[1] == '--format':
+if argv[1] == 'format':
     format_current_tape()
-elif argv[1] == '--store':
+elif argv[1] == 'store':
     current_tape = get_current_tape()
     drive.mount(TAPE_MOUNT)
     try:
@@ -105,7 +105,11 @@ elif argv[1] == '--store':
     finally:
         drive.unmount()
         save_tapes()
-elif argv[1] == '--list':
+elif argv[1] == 'index':
+    current_tape = get_current_tape()
+    current_tape.read_data(drive, TAPE_MOUNT)
+    save_tapes()
+elif argv[1] == 'list':
     files = {}
     for _, tape in tapes.items():
         for name, mtime in tape.files.items():
