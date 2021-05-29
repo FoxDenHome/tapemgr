@@ -75,11 +75,11 @@ def backup_file(name):
     current_tape.files[name] = fstat.st_mtime
 
 load_tapes()
-current_tape = get_current_tape()
 
 if argv[1] == '--format':
     format_current_tape()
 elif argv[1] == '--store':
+    current_tape = get_current_tape()
     drive.mount()
     backup_file(argv[2])
     drive.unmount()
