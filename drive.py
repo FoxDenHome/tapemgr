@@ -29,7 +29,7 @@ class Drive:
         self.unmount()
         self.load()
         self.set_encryption(True)
-        call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-f'])
+        call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', label, '-f'])
 
     def mount(self, mountpoint):
         if self.mountpoint == mountpoint:

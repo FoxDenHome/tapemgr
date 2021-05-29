@@ -33,7 +33,7 @@ def make_tape_label():
     idx = 0
     while True:
         idx += 1
-        label = 'FoxDen %03d' % idx
+        label = 'FOX%03d' % idx
         if label not in tapes:
             return label
 
