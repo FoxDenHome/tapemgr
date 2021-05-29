@@ -152,3 +152,6 @@ elif argv[1] == 'list':
     for name, info in files.items():
         mtime, tape = info
         print("%s [%s]" % (name, tape.label))
+elif argv[1] == 'statistics':
+    for label, tape in tapes.items():
+        print('[%s] Size = %d, Free = %d, Files = %d' % (label, tape.size, tape.free, len(tape.files)))
