@@ -74,6 +74,7 @@ def backup_file(name):
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', '-p', name, '%s%s' % (TAPE_MOUNT, name)])
     current_tape.files[name] = fstat.st_mtime
+    save_tapes()
 
 load_tapes()
 
