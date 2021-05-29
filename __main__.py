@@ -37,13 +37,13 @@ def ask_for_tape(label):
         drive.eject()
         new_label = make_tape_label()
         input('Please insert new/unused/blank tape and press return! (label will be "%d")' % new_label)
-        format_current_tape(new_label)
-        current_tape = get_current_tape()
+        format_current_tape(new_label, True)
         return
 
     while True:
         current_tape = get_current_tape()
         if current_tape and current_tape.label == label:
+            drive.mount()
             return
         drive.eject()
         input('Please insert tape "%s" and press return!' % label)
@@ -62,7 +62,9 @@ def get_current_tape(create_new=False):
         return None
     return tapes[label]
 
-def format_current_tape(label=None):
+def format_current_tape(label=None, mount=False):
+    global current_tape
+
     if get_current_tape():
         raise ValueError('Tape is already in this program!')
     if label is None:
@@ -71,11 +73,13 @@ def format_current_tape(label=None):
 
     tape = Tape(label)
     tape.verify_in_drive(drive)
+    current_tape = tape
+    if mount:
+        drive.mount(TAPE_MOUNT)
     tape.read_data(drive, TAPE_MOUNT)
     tapes[label] = tape
     save_tape(tape)
     print ('Formatted tape with label "%s"!' % label)
-    return tape
 
 def backup_file(file):
     global current_tape
