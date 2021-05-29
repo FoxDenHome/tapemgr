@@ -34,7 +34,7 @@ def make_tape_label():
     idx = 0
     while True:
         idx += 1
-        label = "FoxDen %03d" % idx
+        label = 'FoxDen %03d' % idx
         if label not in tapes:
             return label
 
@@ -50,7 +50,7 @@ def get_current_tape():
 
 def format_current_tape():
     if get_current_tape():
-        raise ValueError("Tape is already in this program!")
+        raise ValueError('Tape is already in this program!')
     label = make_tape_label()
     drive.format(label)
 
