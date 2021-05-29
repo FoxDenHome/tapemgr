@@ -42,6 +42,5 @@ class Drive():
         if self.mountpoint is None:
             return False
         call(['umount', self.mountpoint])
-        self.set_encryption(False)
         self.mountpoint = None
         return True
