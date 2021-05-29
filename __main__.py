@@ -88,6 +88,8 @@ def backup_file(file):
             print('[SKIP] %s' % name)
             return
 
+    print('[STOR] %s' % name)
+
     min_size = fstat.st_size + TAPE_SIZE_SPARE
     if current_tape is None or current_tape.free < min_size:
         drive.unmount()
@@ -105,7 +107,6 @@ def backup_file(file):
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
 
-    print('[STOR] %s' % name)
     call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
     call(['cp', '-p', name, tape_name])
     current_tape.files[name] = fstat.st_mtime
