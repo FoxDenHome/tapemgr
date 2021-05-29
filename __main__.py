@@ -43,7 +43,9 @@ def ask_for_tape(label):
     if label is None:
         drive.eject()
         input('Please insert new/unused/blank tape and press return!')
-        return format_current_tape()
+        format_current_tape()
+        current_tape = get_current_tape()
+        return
 
     while True:
         current_tape = get_current_tape()
