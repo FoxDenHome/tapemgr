@@ -133,14 +133,14 @@ if argv[1] == 'format':
     format_current_tape()
 elif argv[1] == 'store':
     try:
-        name = argv[2]
-        stat = lstat(name)
-        if S_ISDIR(stat.st_mode):
-            backup_recursive(name)
-        elif S_ISREG(stat.st_mode):
-            backup_file(name)
-        else:
-            raise ValueError("Cannot backup file (not regular file or directory): %s" % name)
+        for name in argv[2:]:
+            stat = lstat(name)
+            if S_ISDIR(stat.st_mode):
+                backup_recursive(name)
+            elif S_ISREG(stat.st_mode):
+                backup_file(name)
+            else:
+                raise ValueError("Cannot backup file (not regular file or directory): %s" % name)
     finally:
         drive.unmount()
         save_tapes()
