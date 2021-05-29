@@ -3,7 +3,7 @@ from subprocess import check_output
 class Tape():
     def __init__(self, label):
         self.label = label
-        self.files = set()
+        self.files = {}
         self.size = 0
         self.free = 0
 
@@ -22,7 +22,7 @@ class Tape():
         self.free = int(free)
 
         # TODO: Read files
-        self.files = set()
+        self.files = {}
 
         if did_mount:
             drive.unmount()

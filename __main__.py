@@ -3,12 +3,14 @@ from drive import Drive
 from os import path, lstat
 from subprocess import call
 from pickle import load, dump
+from sys import argv
 
 TAPE_MOUNT = '/mnt/tape'
 
 drive = Drive('nst0')
 tapes = {}
-files = set()
+
+TAPE_SIZE_SPARE = 1024 * 1024 # 1 MB
 
 def save_tapes():
     fh = open('tapes.dat', 'wb')
@@ -22,13 +24,7 @@ def load_tapes():
         tapes = load(fh)
         fh.close()
     except:
-        pass
-
-def recompute_files():
-    files.clear()
-    for tape in tapes:
-        for file in tape.files:
-            files.add(file)
+        pass  
 
 def make_tape_label():
     idx = 0
@@ -65,8 +61,35 @@ def backup_file(name):
     dir = path.basename(name)
 
     fstat = lstat(name)
-    fstat.st_size
 
-    call(['mkdir', '-p', '%s/%s' % (TAPE_MOUNT, dir)])
+    for _, tape in tapes.items():
+        if name in tape.files and tape.files[name] >= fstat.st_mtime:
+            return
+
+    if fstat.st_size >= current_tape.free - TAPE_SIZE_SPARE:
+        # Find new tape!
+        return
+
+    call(['mkdir', '-p', '%s%s' % (TAPE_MOUNT, dir)])
+    call(['cp', '-p', name, '%s%s' % (TAPE_MOUNT, name)])
+    current_tape.files[name] = fstat.st_mtime
 
 load_tapes()
+current_tape = get_current_tape()
+
+if argv[1] == '--format':
+    format_current_tape()
+elif argv[1] == '--store':
+    drive.mount()
+    backup_file(argv[2])
+    drive.unmount()
+elif argv[1] == '--list':
+    files = {}
+    for _, tape in tapes.items():
+        for name, mtime in tape.files.items():
+            if name in files and files[name][1] >= mtime:
+                continue
+            files[name] = (mtime, tape)
+
+    for name, info in files.items():
+        print("%s [%s]" % (name, info.tape.label))
