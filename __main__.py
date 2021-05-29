@@ -2,6 +2,7 @@ from tape import Tape
 from drive import Drive
 from os import path, lstat
 from subprocess import call
+from pickle import load, dump
 
 TAPE_MOUNT = '/mnt/tape'
 
@@ -10,10 +11,18 @@ tapes = {}
 files = set()
 
 def save_tapes():
-    pass
+    fh = open('tapes.dat', 'wb')
+    dump(tapes, fh)
+    fh.close()
 
 def load_tapes():
-    pass
+    global tapes
+    try:
+        fh = open('tapes.dat', 'wb')
+        tapes = load(fh)
+        fh.close()
+    except:
+        pass
 
 def recompute_files():
     files.clear()
@@ -59,3 +68,5 @@ def backup_file(name):
     fstat.st_size
 
     call(['mkdir', '-p', '%s/%s' % (TAPE_MOUNT, dir)])
+
+load_tapes()
