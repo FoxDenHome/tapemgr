@@ -92,7 +92,9 @@ def backup_file(file):
     print('[STOR] %s' % name)
 
     min_size = fstat.st_size + TAPE_SIZE_SPARE
-    if current_tape is None or current_tape.free < min_size:
+    while current_tape is None or current_tape.free < min_size:
+        if current_tape is not None:
+            current_tape.read_data(drive, TAPE_MOUNT, False)
         drive.unmount()
         # Find new tape!
         found_existing_tape = False
