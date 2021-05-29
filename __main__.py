@@ -46,7 +46,7 @@ def ask_for_tape(label):
 
     while current_tape is None or current_tape.label != label:
         drive.eject()
-        input('Please insert tape "%s" and press return!')
+        input('Please insert tape "%s" and press return!' % label)
         current_tape = get_current_tape()
 
 def get_current_tape():
