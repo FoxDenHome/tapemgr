@@ -58,7 +58,7 @@ def format_current_tape():
 
 def backup_file(name):
     name = path.abspath(name)
-    dir = path.basename(name)
+    dir = path.dirname(name)
 
     fstat = lstat(name)
 
