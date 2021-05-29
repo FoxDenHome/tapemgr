@@ -7,7 +7,7 @@ from sys import argv
 from stat import S_ISDIR, S_ISREG
 
 TAPE_MOUNT = '/mnt/tape'
-TAPES_DAT_FILE = path.join(path.dirname(__file__), 'tapes.dat')
+TAPES_DIR = path.join(path.dirname(__file__), 'tapes')
 
 drive = Drive('nst0')
 tapes = {}
@@ -15,19 +15,34 @@ current_tape = None
 
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 
-def save_tapes():
-    fh = open(TAPES_DAT_FILE, 'wb')
-    dump(tapes, fh)
+def save_tape(tape):
+    fh = open(path.join(TAPES_DIR, tape.label), 'wb')
+    dump(tape, fh)
     fh.close()
 
-def load_tapes():
+def save_all_tapes():
+    for _, tape in tapes.items():
+        save_tape(tape)
+
+def refresh_and_save_current_tape():
+    current_tape.read_data(drive, TAPE_MOUNT, False)
+    save_tape(current_tape)
+
+def load_all_tapes():
     global tapes
-    try:
-        fh = open(TAPES_DAT_FILE, 'rb')
-        tapes = load(fh)
-        fh.close()
-    except:
-        pass
+    tapes = {}
+    for file in scandir(TAPES_DIR):
+        if not file.is_file():
+            continue
+        if file.name[0] == '.':
+            continue
+        try:
+            fh = open(file.path, 'rb')
+            tape = load(fh)
+            tapes[tape.label] = tape
+            fh.close()
+        except:
+            print('Error loading tape data "%s"' % file.name)
 
 def make_tape_label():
     idx = 0
@@ -80,7 +95,7 @@ def format_current_tape(label=None):
     tape.verify_in_drive(drive)
     tape.read_data(drive, TAPE_MOUNT)
     tapes[label] = tape
-    save_tapes()
+    save_tape(tape)
     print ('Formatted tape with label "%s"!' % label)
     return tape
 
@@ -103,8 +118,7 @@ def backup_file(file):
     min_size = fstat.st_size + TAPE_SIZE_SPARE
 
     if current_tape is not None and current_tape.free < min_size:
-        current_tape.read_data(drive, TAPE_MOUNT, False)
-        save_tapes()
+        refresh_and_save_current_tape()
 
     while current_tape is None or current_tape.free < min_size:
         drive.unmount()
@@ -118,8 +132,7 @@ def backup_file(file):
         if not found_existing_tape:
             ask_for_tape(None)
         drive.mount(TAPE_MOUNT)
-        current_tape.read_data(drive, TAPE_MOUNT, False)
-        save_tapes()
+        refresh_and_save_current_tape()
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
 
@@ -129,8 +142,7 @@ def backup_file(file):
     fstat_tape = lstat(tape_name)
     current_tape.files[name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
 
-    current_tape.read_data(drive, TAPE_MOUNT, False)
-    save_tapes()
+    refresh_and_save_current_tape()
 
 def backup_recursive(dir):
     for file in scandir(dir):
@@ -140,7 +152,7 @@ def backup_recursive(dir):
             elif S_ISREG(stat.st_mode):
                 backup_file(file)
 
-load_tapes()
+load_all_tapes()
 
 def format_size(size):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
@@ -163,11 +175,10 @@ elif argv[1] == 'store':
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
-        save_tapes()
 elif argv[1] == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(drive, TAPE_MOUNT)
-    save_tapes()
+    save_tape(current_tape)
 elif argv[1] == 'list':
     files = {}
     for _, tape in tapes.items():
