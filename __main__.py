@@ -7,6 +7,7 @@ from sys import argv
 from stat import S_ISDIR, S_ISREG
 
 TAPE_MOUNT = '/mnt/tape'
+TAPES_DAT_FILE = path.join(path.dirname(__file__), 'tapes.dat')
 
 drive = Drive('nst0')
 tapes = {}
@@ -15,14 +16,14 @@ current_tape = None
 TAPE_SIZE_SPARE = 1024 * 1024 # 1 MB
 
 def save_tapes():
-    fh = open('tapes.dat', 'wb')
+    fh = open(TAPES_DAT_FILE, 'wb')
     dump(tapes, fh)
     fh.close()
 
 def load_tapes():
     global tapes
     try:
-        fh = open('tapes.dat', 'rb')
+        fh = open(TAPES_DAT_FILE, 'rb')
         tapes = load(fh)
         fh.close()
     except:
