@@ -1,10 +1,10 @@
-from subprocess import check_call, check_output
-from time import sleep
+from subprocess import check_call, check_output, Popen
 
 class Drive:
     def __init__(self, dev):
         self.dev = '/dev/%s' % dev
         self.mountpoint = None
+        self.ltfs_process = None
 
         fh = open('/sys/class/scsi_tape/%s/device/generic/dev' % dev, 'r')
         fd = fh.read().strip()
@@ -38,13 +38,14 @@ class Drive:
         self.load()
         self.set_encryption(True)
         self.mountpoint = mountpoint
-        check_call(['ltfs', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
+        self.ltfs_process = Popen(['ltfs', '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
         return True
 
     def unmount(self):
         if self.mountpoint is None:
             return False
         check_call(['umount', self.mountpoint])
+        self.ltfs_process.wait()
+        self.ltfs_process = None
         self.mountpoint = None
-        sleep(60)
         return True
