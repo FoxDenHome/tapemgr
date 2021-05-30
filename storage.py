@@ -1,7 +1,11 @@
 from os import path, scandir
 from pickle import load, dump
 
-TAPES_DIR = path.join(path.dirname(__file__), 'tapes')
+TAPES_DIR = None
+
+def set_storage_dir(dir):
+    global TAPES_DIR
+    TAPES_DIR = dir
 
 def save_tape(tape):
     fh = open(path.join(TAPES_DIR, tape.label), 'wb')

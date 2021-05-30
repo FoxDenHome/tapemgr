@@ -4,16 +4,18 @@ from os import path, lstat, scandir
 from subprocess import call, check_call
 from sys import argv
 from stat import S_ISDIR, S_ISREG
-from storage import save_tape, load_all_tapes
+from storage import save_tape, load_all_tapes, set_storage_dir
 from datetime import datetime
+from argparse import ArgumentParser
 
-TAPE_MOUNT = '/mnt/tape'
+TAPE_MOUNT = None
+TAPE_PREFIX = None
+TAPE_TYPE = None
+TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 
-drive = Drive('nst0')
+drive = None
 tapes = {}
 current_tape = None
-
-TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 
 def save_all_tapes():
     for _, tape in tapes.items():
@@ -26,12 +28,12 @@ def make_tape_label():
     idx = 0
     while True:
         idx += 1
-        label = 'FOX%03d' % idx
+        label = '%s%03d' % (TAPE_PREFIX, idx)
         if label not in tapes:
             return label
 
 def barcode_from_label(label):
-    return '%sL6' % label
+    return '%s%s' % (label, TAPES_TYPE)
 
 def load_tape(label):
     # Here we would tell a library/autoloader to load a specified tape by label/barcode
@@ -143,8 +145,6 @@ def backup_recursive(dir):
             elif S_ISREG(stat.st_mode):
                 backup_file(file)
 
-tapes = load_all_tapes()
-
 def format_size(size):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
         if size < 1024.0:
@@ -156,9 +156,34 @@ def format_mtime(mtime):
     time = datetime.fromtimestamp(mtime)
     return time.strftime("%Y-%m-%d %H:%M:%S")
 
-if argv[1] == 'format':
+parser = ArgumentParser(description='Tape manager')
+parser.add_argument('string', metavar='action', type=str, nargs=1, help='The action to perform')
+parser.add_argument('strings', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
+parser.add_argument('--device', dest='device', type=str, default='nst0')
+parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
+parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(path.dirname(__file__), 'tapes'))
+parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='FOX', help='Prefix to add to tape label and barcode (must be 3 chars)')
+parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
+
+args = parser.parse_args()
+
+if len(args.tape_prefix) != 3:
+    raise ValueError('Tape prefix must be exactly 3 characters')
+
+if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
+    raise ValueError('Tape type must be L#')
+
+set_storage_dir(args.tape_dir)
+TAPE_MOUNT = args.mount
+TAPE_PREFIX = args.tape_prefix
+TAPE_TYPE = args.tape_type
+
+drive = Drive(args.device)
+tapes = load_all_tapes()
+
+if args.action == 'format':
     format_current_tape()
-elif argv[1] == 'store':
+elif args.action == 'store':
     try:
         for name in argv[2:]:
             stat = lstat(name)
@@ -170,10 +195,10 @@ elif argv[1] == 'store':
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
-elif argv[1] == 'index':
+elif args.action == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(drive, TAPE_MOUNT)
-elif argv[1] == 'list':
+elif args.action == 'list':
     files = {}
     for _, tape in tapes.items():
         for name, info in tape.files.items():
@@ -184,7 +209,7 @@ elif argv[1] == 'list':
     for name, info_tuple in files.items():
         info, tape = info_tuple
         print('[%s] Name "%s", size %s, mtime %s' % (tape.label, name, format_size(info.size), format_mtime(info.mtime)))
-elif argv[1] == 'find':
+elif args.action == 'find':
     best_info = None
     best_tape = None
     for _, tape in tapes.items():
@@ -200,7 +225,7 @@ elif argv[1] == 'find':
         print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.label, format_size(info.size), format_mtime(info.mtime)))
     else:
         print('Could not find that file :(')
-elif argv[1] == 'mount':
+elif args.action == 'mount':
     current_tape = get_current_tape(create_new=True)
     if current_tape is not None:
         drive.mount(TAPE_MOUNT)
@@ -208,6 +233,6 @@ elif argv[1] == 'mount':
     else:
         print('Do not recognize this tape!')
         drive.eject()
-elif argv[1] == 'statistics':
+elif args.action == 'statistics':
     for label, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (label, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
