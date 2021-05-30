@@ -1,4 +1,6 @@
 from subprocess import check_call, check_output, Popen
+from os.path import ismount
+from time import sleep
 
 class Drive:
     def __init__(self, dev):
@@ -39,6 +41,10 @@ class Drive:
         self.set_encryption(True)
         self.mountpoint = mountpoint
         self.ltfs_process = Popen(['ltfs', '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
+        while self.ltfs_process.returncode is None:
+            if ismount(mountpoint):
+                break
+            sleep(0.1)
         return True
 
     def unmount(self):
