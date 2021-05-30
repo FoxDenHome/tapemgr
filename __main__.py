@@ -52,7 +52,7 @@ def ask_for_tape(label):
     while True:
         current_tape = get_current_tape()
         if current_tape and current_tape.label == label:
-            drive.mount()
+            drive.mount(TAPE_MOUNT)
             return
         drive.eject()
         load_tape(label)
