@@ -45,6 +45,8 @@ class Drive:
             if ismount(mountpoint):
                 break
             sleep(0.1)
+        if not ismount(mountpoint):
+            raise SystemError("Could not mount LTFS tape!")
         return True
 
     def unmount(self):
