@@ -181,9 +181,11 @@ TAPE_TYPE = args.tape_type
 drive = Drive(args.device)
 tapes = load_all_tapes()
 
-if args.action == 'format':
+action = args.action[0]
+
+if action == 'format':
     format_current_tape()
-elif args.action == 'store':
+elif action == 'store':
     try:
         for name in argv[2:]:
             stat = lstat(name)
@@ -195,10 +197,10 @@ elif args.action == 'store':
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
-elif args.action == 'index':
+elif action == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(drive, TAPE_MOUNT)
-elif args.action == 'list':
+elif action == 'list':
     files = {}
     for _, tape in tapes.items():
         for name, info in tape.files.items():
@@ -209,7 +211,7 @@ elif args.action == 'list':
     for name, info_tuple in files.items():
         info, tape = info_tuple
         print('[%s] Name "%s", size %s, mtime %s' % (tape.label, name, format_size(info.size), format_mtime(info.mtime)))
-elif args.action == 'find':
+elif action == 'find':
     best_info = None
     best_tape = None
     for _, tape in tapes.items():
@@ -225,7 +227,7 @@ elif args.action == 'find':
         print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.label, format_size(info.size), format_mtime(info.mtime)))
     else:
         print('Could not find that file :(')
-elif args.action == 'mount':
+elif action == 'mount':
     current_tape = get_current_tape(create_new=True)
     if current_tape is not None:
         drive.mount(TAPE_MOUNT)
@@ -233,6 +235,6 @@ elif args.action == 'mount':
     else:
         print('Do not recognize this tape!')
         drive.eject()
-elif args.action == 'statistics':
+elif action == 'statistics':
     for label, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (label, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
