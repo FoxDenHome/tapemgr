@@ -2,7 +2,6 @@ from tape import FileInfo, Tape
 from drive import Drive
 from os import path, lstat, scandir
 from subprocess import call, check_call
-from sys import argv
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
 from datetime import datetime
@@ -33,7 +32,7 @@ def make_tape_label():
             return label
 
 def barcode_from_label(label):
-    return '%s%s' % (label, TAPES_TYPE)
+    return '%s%s' % (label, TAPE_TYPE)
 
 def load_tape(label):
     # Here we would tell a library/autoloader to load a specified tape by label/barcode
@@ -187,7 +186,7 @@ if action == 'format':
     format_current_tape()
 elif action == 'store':
     try:
-        for name in argv[2:]:
+        for name in args.files:
             stat = lstat(name)
             if S_ISDIR(stat.st_mode):
                 backup_recursive(name)
@@ -216,7 +215,7 @@ elif action == 'find':
     best_tape = None
     for _, tape in tapes.items():
         for name, info in tape.files.items():
-            if name != argv[2]:
+            if name != args.files[1]:
                 continue
             print('Found copy of file on "%s", size %s, mtime %s' % (tape.label, format_size(info.size), format_mtime(info.mtime)))
             if best_info is not None and best_info.is_better_than(info):
