@@ -7,6 +7,7 @@ class Drive:
         self.dev = dev
         self.mountpoint = None
         self.ltfs_process = None
+
     def set_encryption(self, on):
         check_call(['stenc', '-f', self.dev, '-e', 'on' if on else 'off', '-k', '/mnt/keydisk/tape.key', '-a', '1', '--ckod'])
 
