@@ -158,7 +158,7 @@ def format_mtime(mtime):
 parser = ArgumentParser(description='Tape manager')
 parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
 parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
-parser.add_argument('--device', dest='device', type=str, default='nst0')
+parser.add_argument('--device', dest='device', type=str, default='/dev/nst0')
 parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
 parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(path.dirname(__file__), 'tapes'))
 parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='FOX', help='Prefix to add to tape label and barcode (must be 3 chars)')

@@ -1,30 +1,22 @@
 from subprocess import check_call, check_output, Popen
-from os.path import ismount, dirname, join
+from os.path import ismount
 from time import sleep
-
-TAPE_TOOL_PATH = join(dirname(__file__), 'tool', 'TapeTool.sh')
 
 class Drive:
     def __init__(self, dev):
-        self.dev = '/dev/%s' % dev
+        self.dev = dev
         self.mountpoint = None
         self.ltfs_process = None
-
-        fh = open('/sys/class/scsi_tape/%s/device/generic/dev' % dev, 'r')
-        fd = fh.read().strip()
-        fh.close()
-        self.sgid = fd.split(':')[1]
-
     def set_encryption(self, on):
         check_call(['stenc', '-f', self.dev, '-e', 'on' if on else 'off', '-k', '/mnt/keydisk/tape.key', '-a', '1', '--ckod'])
 
     def eject(self):
         self.unmount()
-        check_call([TAPE_TOOL_PATH, 'eject', self.sgid])
+        check_call(['sg_start', '--eject', self.dev])
 
     def load(self):
         self.unmount()
-        check_call([TAPE_TOOL_PATH, 'load', self.sgid])
+        check_call(['sg_start', '--load', self.dev])
 
     def read_label(self):
         return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
