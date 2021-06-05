@@ -1,6 +1,8 @@
 from subprocess import check_call, check_output, Popen
-from os.path import ismount
+from os.path import ismount, dirname, join
 from time import sleep
+
+TAPE_TOOL_PATH = join(dirname(__file__), 'tool', 'TapeTool.sh')
 
 class Drive:
     def __init__(self, dev):
@@ -18,11 +20,11 @@ class Drive:
 
     def eject(self):
         self.unmount()
-        check_call(['/opt/tape/TapeTool.sh', 'eject', self.sgid])
+        check_call([TAPE_TOOL_PATH, 'eject', self.sgid])
 
     def load(self):
         self.unmount()
-        check_call(['/opt/tape/TapeTool.sh', 'load', self.sgid])
+        check_call([TAPE_TOOL_PATH, 'load', self.sgid])
 
     def read_label(self):
         return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
