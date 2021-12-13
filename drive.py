@@ -22,11 +22,11 @@ class Drive:
     def read_label(self):
         return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
 
-    def format(self, label, barcode):
+    def format(self, label, serial):
         self.unmount()
         self.load()
         self.set_encryption(True)
-        check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', barcode, '-f'])
+        check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
 
     def mount(self, mountpoint):
         if self.mountpoint == mountpoint:

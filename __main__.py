@@ -34,6 +34,9 @@ def make_tape_label():
 def barcode_from_label(label):
     return '%s%s' % (label, TAPE_TYPE)
 
+def serial_from_label(label):
+    return label
+
 def load_tape(label):
     # Here we would tell a library/autoloader to load a specified tape by label/barcode
     # But I don't have one, so it is a manual function right now
@@ -79,7 +82,7 @@ def format_current_tape(label=None, mount=False):
         raise ValueError('Tape is already in this program!')
     if label is None:
         label = make_tape_label()
-    drive.format(label, barcode_from_label(label))
+    drive.format(label, serial_from_label(label))
 
     tape = Tape(label)
     tape.verify_in_drive(drive)
