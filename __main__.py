@@ -64,7 +64,10 @@ def ask_for_tape(label):
 def get_current_tape(create_new=False):
     label = drive.read_label()
     if label is None:
-        drive.load()
+        try:
+            drive.load()
+        except:
+            return None
         label = drive.read_label()
         if label is None:
             return None
