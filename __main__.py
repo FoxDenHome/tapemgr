@@ -62,17 +62,20 @@ def ask_for_tape(label):
         load_tape(label)
 
 def get_current_tape(create_new=False):
-    try:
-        drive.read_label()
-    except:
-        drive.load()
     label = drive.read_label()
+    if label is None:
+        drive.load()
+        label = drive.read_label()
+        if label is None:
+            return None
+
     if not label in tapes:
         if create_new:
             tape = Tape(label)
             tapes[label] = tape
             return tape
         return None
+
     return tapes[label]
 
 def format_current_tape(label=None, mount=False):

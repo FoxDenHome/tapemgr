@@ -20,7 +20,10 @@ class Drive:
         check_call(['sg_start', '--load', self.dev])
 
     def read_label(self):
-        return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
+        try:
+            return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
+        except:
+            return None
 
     def format(self, label, serial):
         self.unmount()
