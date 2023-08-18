@@ -10,11 +10,17 @@ class Changer:
 
     def read_inventory(self):
         inventory = {}
+        current_loaded = {}
     
         res = check_output(["mtx", "-f", self.dev, "status"], encoding='utf-8')
         for line in res.splitlines():
             line = line.strip()
-            if not line.startswith('Storage Element') and not line.startswith('Data Transfer Element'):
+            index_type = None
+            if line.startswith('Storage Element'):
+                index_type = 'storage'
+            elif line.startswith('Data Transfer Element'):
+                index_type = 'drive'
+            else:
                 continue
             sections = line.split(':')
             status = sections[1].strip()
@@ -34,11 +40,16 @@ class Changer:
                 if secsplit[0].strip() == 'VolumeTag':
                     barcode = secsplit[1].strip()
 
-                    inventory[barcode] = index
+                    if index_type == 'storage':
+                        inventory[barcode] = index
+                    elif index_type == 'drive':
+                        current_loaded[index] = barcode
 
-        return inventory
+        return inventory, current_loaded
 
     def load_by_barcode(self, barcode):
-        inventory = self.read_inventory()
+        inventory, current_loaded = self.read_inventory()
+        if current_loaded.get(self.drive_index, None) == barcode:
+            return
         index = inventory[barcode]
         check_output(["mtx", "-f", self.dev, "load", str(index), str(self.drive_index)])
