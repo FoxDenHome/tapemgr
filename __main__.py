@@ -180,9 +180,6 @@ parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', hel
 
 args = parser.parse_args()
 
-if len(args.tape_prefix) != 3:
-    raise ValueError('Tape prefix must be exactly 3 characters')
-
 if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
     raise ValueError('Tape type must be L#')
 
