@@ -5,6 +5,8 @@ class Changer:
         self.dev = dev
 
     def read_inventory(self):
+        inventory = {}
+    
         res = check_output(["mtx", "-f", self.dev, "status"], encoding='utf-8')
         for line in res.splitlines():
             line = line.strip()
@@ -14,7 +16,15 @@ class Changer:
             status = sections[1].strip()
             if status != 'Full':
                 continue
-            print(sections)
+
+            index = int(sections[0].split(' ')[-1], 10)
+
+            for sec in sections[2:]:
+                secsplit = sec.split('=')
+                if secsplit[0].strip() == 'VolumeTag':
+                    barcode = secsplit[1].strip()
+                    print(index, barcode)
+
 
     def load_by_barcode(self, barcode):
         self.read_inventory()
