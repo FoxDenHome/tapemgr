@@ -20,9 +20,9 @@ class Changer:
             index = None
 
             element_split = sections[0].split(' ')
-            for i in range(element_split):
+            for i in range(len(element_split)):
                 if element_split[i] == 'Element':
-                    index = int(element_split[i+1])
+                    index = int(element_split[i+1], 10)
                     break
 
             for sec in sections[2:]:
