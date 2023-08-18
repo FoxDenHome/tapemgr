@@ -1,5 +1,6 @@
 from tape import FileInfo, Tape
 from drive import Drive
+from changer import Changer
 from os import path, lstat, scandir
 from subprocess import call, check_call
 from stat import S_ISDIR, S_ISREG
@@ -9,10 +10,13 @@ from argparse import ArgumentParser
 
 TAPE_MOUNT = None
 TAPE_PREFIX = None
+TAPE_SUFFIX = None
 TAPE_TYPE = None
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
+TAPE_LABEL_FMT = None
 
 drive = None
+changer = None
 tapes = {}
 current_tape = None
 
@@ -27,7 +31,7 @@ def make_tape_label():
     idx = 0
     while True:
         idx += 1
-        label = '%s%03d' % (TAPE_PREFIX, idx)
+        label = TAPE_LABEL_FMT % (TAPE_PREFIX, idx, TAPE_SUFFIX)
         if label not in tapes:
             return label
 
@@ -38,10 +42,9 @@ def serial_from_label(label):
     return label
 
 def load_tape(label):
-    # Here we would tell a library/autoloader to load a specified tape by label/barcode
-    # But I don't have one, so it is a manual function right now
     barcode = barcode_from_label(label)
-    input('Please insert tape "%s" [%s] and press return!' % (label, barcode))
+    print('Loading tape label "%s" by barcode "%s"' % (label, barcode))
+    changer.load_by_barcode(barcode)
 
 def ask_for_tape(label):
     global current_tape
@@ -168,9 +171,11 @@ parser = ArgumentParser(description='Tape manager')
 parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
 parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
 parser.add_argument('--device', dest='device', type=str, default='/dev/nst0')
+parser.add_argument('--changer', dest='changer', type=str, default='/dev/sch0')
 parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
 parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(path.dirname(__file__), 'tapes'))
-parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='FOX', help='Prefix to add to tape label and barcode (must be 3 chars)')
+parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='P', help='Prefix to add to tape label and barcode')
+parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
 parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
 
 args = parser.parse_args()
@@ -184,9 +189,12 @@ if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
 set_storage_dir(args.tape_dir)
 TAPE_MOUNT = args.mount
 TAPE_PREFIX = args.tape_prefix
+TAPE_SUFFIX = args.tape_suffix
 TAPE_TYPE = args.tape_type
+TAPE_LABEL_FMT = f'%s%0{6 - (len(TAPE_PREFIX) + len(TAPE_SUFFIX))}d%s'
 
 drive = Drive(args.device)
+changer = Changer(args.changer)
 tapes = load_all_tapes()
 
 action = args.action[0]
