@@ -50,7 +50,7 @@ def ask_for_tape(label):
     global current_tape
 
     if label is None:
-        drive.eject()
+        changer.eject()
         new_label = make_tape_label()
         load_tape(new_label)
         format_current_tape(new_label, True)
@@ -61,16 +61,16 @@ def ask_for_tape(label):
         if current_tape and current_tape.label == label:
             drive.mount(TAPE_MOUNT)
             return
-        drive.eject()
+        changer.eject()
         load_tape(label)
 
 def get_current_tape(create_new=False):
     label = drive.read_label()
     if label is None:
-        try:
-            drive.load()
-        except:
-            return None
+        #try:
+        #    drive.load()
+        #except:
+        #    return None
         label = drive.read_label()
         if label is None:
             return None
@@ -247,7 +247,7 @@ elif action == 'mount':
         print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.label, TAPE_MOUNT, TAPE_MOUNT))
     else:
         print('Do not recognize this tape!')
-        drive.eject()
+        changer.eject()
 elif action == 'statistics':
     for label, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (label, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))

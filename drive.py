@@ -11,10 +11,6 @@ class Drive:
     def set_encryption(self, on):
         check_call(['stenc', '-f', self.dev, '-e', 'on' if on else 'off', '-k', '/mnt/keydisk/tape.key', '-a', '1', '--ckod'])
 
-    def eject(self):
-        self.unmount()
-        check_call(['sg_start', '--eject', self.dev])
-
     def load(self):
         self.unmount()
         check_call(['sg_start', '--load', self.dev])
