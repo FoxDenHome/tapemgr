@@ -5,6 +5,9 @@ class Changer:
         self.dev = dev
         self.drive_index = drive_index
 
+    def eject(self):
+        pass
+
     def read_inventory(self):
         inventory = {}
     
