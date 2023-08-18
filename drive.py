@@ -17,7 +17,7 @@ class Drive:
 
     def read_label(self):
         try:
-            return check_output(['lto-cm', '-f', self.dev, '-r', '2051'], timeout=5).decode().strip()
+            return check_output(['lto-cm', '-f', self.dev, '-r'], timeout=5).decode().strip()
         except:
             return None
 
