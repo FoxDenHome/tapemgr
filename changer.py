@@ -17,7 +17,13 @@ class Changer:
             if status != 'Full':
                 continue
 
-            index = int(sections[0].split(' ')[-1], 10)
+            index = None
+
+            element_split = sections[0].split(' ')
+            for i in range(element_split):
+                if element_split[i] == 'Element':
+                    index = int(element_split[i+1])
+                    break
 
             for sec in sections[2:]:
                 secsplit = sec.split('=')
