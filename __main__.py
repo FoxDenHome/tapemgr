@@ -42,6 +42,9 @@ def serial_from_label(label):
     return label
 
 def load_tape(label):
+    current_label = drive.read_label()
+    if label == current_label:
+        return
     barcode = barcode_from_label(label)
     print('Loading tape label "%s" by barcode "%s"' % (label, barcode))
     changer.load_by_barcode(barcode)
