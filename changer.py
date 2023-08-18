@@ -5,7 +5,7 @@ class Changer:
         self.dev = dev
 
     def read_inventory(self):
-        res = check_output(["mtx", "-f", self.dev, "status"])
+        res = check_output(["mtx", "-f", self.dev, "status"], encoding='utf-8')
         for line in res.splitlines():
             line = line.strip()
             if not line.startswith('Storage Element') and not line.startswith('Data Transfer Element'):
