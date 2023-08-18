@@ -18,7 +18,7 @@ class Changer:
                 continue
             sections = line.split(':')
             status = sections[1].strip()
-            if status != 'Full':
+            if not status.startswith('Full'):
                 continue
 
             index = None
