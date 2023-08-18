@@ -1,8 +1,9 @@
 from subprocess import check_output
 
 class Changer:
-    def __init__(self, dev):
+    def __init__(self, dev, drive_index=0):
         self.dev = dev
+        self.drive_index = drive_index
 
     def read_inventory(self):
         inventory = {}
@@ -29,11 +30,12 @@ class Changer:
                 secsplit = sec.split('=')
                 if secsplit[0].strip() == 'VolumeTag':
                     barcode = secsplit[1].strip()
-                    print(index, barcode)
 
+                    inventory[barcode] = index
+
+        return inventory
 
     def load_by_barcode(self, barcode):
-        self.read_inventory()
-
-c = Changer('/dev/sch0')
-c.read_inventory()
+        inventory = self.read_inventory()
+        index = inventory[barcode]
+        check_output(["mtx", "-f", self.dev, "load", str(index), str(self.drive_index)])
