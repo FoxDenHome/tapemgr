@@ -1,6 +1,7 @@
 from subprocess import check_call, check_output, Popen
-from os.path import ismount
+from os.path import ismount, basename
 from time import sleep
+from os import readlink
 
 class Drive:
     def __init__(self, dev):
@@ -28,7 +29,8 @@ class Drive:
         check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
 
     def make_sg(self):
-        return '/sys/class/scsi_tape/%s/device/generic' % self.dev.replace('/dev/', '')
+        linkdest = readlink('/sys/class/scsi_tape/%s/device/generic' % self.dev.replace('/dev/', ''))
+        return '/dev/%s' % basename(linkdest)
 
     def mount(self, mountpoint):
         if self.mountpoint == mountpoint:
