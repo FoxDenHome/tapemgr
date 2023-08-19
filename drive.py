@@ -27,6 +27,9 @@ class Drive:
         self.set_encryption(True)
         check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
 
+    def make_sg(self):
+        return '/sys/class/scsi_tape/%s/device/generic' % self.dev.replace('/dev/', '')
+
     def mount(self, mountpoint):
         if self.mountpoint == mountpoint:
             return False
@@ -34,7 +37,7 @@ class Drive:
         self.load()
         self.set_encryption(True)
         self.mountpoint = mountpoint
-        self.ltfs_process = Popen(['ltfs', '-o', 'devname=%s' % self.dev, '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
+        self.ltfs_process = Popen(['ltfs', '-o', 'devname=%s' % self.make_sg(), '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
         while self.ltfs_process.returncode is None:
             if ismount(mountpoint):
                 break
