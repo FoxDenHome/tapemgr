@@ -31,13 +31,13 @@ class Tape:
         self.size = 0
         self.free = 0
 
-    def verify_in_drive(self, changer):
+    def verify_in_changer(self, changer):
         found_barcode = changer.read_barcode()
         if found_barcode != self.barcode:
             raise ValueError('Could not change to tape "%s", got "%s"!' % (self.barcode, found_barcode))
 
-    def read_data(self, drive, mountpoint, readfiles=True):
-        self.verify_in_drive(drive)
+    def read_data(self, changer, drive, mountpoint, readfiles=True):
+        self.verify_in_changer(changer)
         did_mount = drive.mount(mountpoint)
 
         line = check_output(['df', '-B1', mountpoint]).decode().split('\n')[1]

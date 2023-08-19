@@ -25,7 +25,7 @@ def save_all_tapes():
         save_tape(tape)
 
 def refresh_current_tape():
-    current_tape.read_data(drive, TAPE_MOUNT, False)
+    current_tape.read_data(changer, drive, TAPE_MOUNT, False)
 
 def make_tape_label():
     idx = 0
@@ -94,11 +94,11 @@ def format_current_tape(label=None, mount=False):
     drive.format(label, serial_from_label(label))
 
     tape = Tape(label, barcode_from_label(label))
-    tape.verify_in_drive(drive)
+    tape.verify_in_changer(changer)
     current_tape = tape
     if mount:
         drive.mount(TAPE_MOUNT)
-    tape.read_data(drive, TAPE_MOUNT)
+    tape.read_data(changer, drive, TAPE_MOUNT)
     tapes[label] = tape
     save_tape(tape)
     print ('Formatted tape with label "%s"!' % label)
@@ -212,7 +212,7 @@ elif action == 'store':
         drive.unmount()
 elif action == 'index':
     current_tape = get_current_tape(create_new=True)
-    current_tape.read_data(drive, TAPE_MOUNT)
+    current_tape.read_data(changer, drive, TAPE_MOUNT)
 elif action == 'list':
     files = {}
     for _, tape in tapes.items():
