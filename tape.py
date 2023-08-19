@@ -24,16 +24,17 @@ class FileInfo:
         return self.mtime > other.mtime
 
 class Tape:
-    def __init__(self, label):
+    def __init__(self, label, barcode):
         self.label = label
+        self.barcode = barcode
         self.files = {}
         self.size = 0
         self.free = 0
 
-    def verify_in_drive(self, drive):
-        found_label = drive.read_label()
-        if found_label != self.label:
-            raise ValueError('Please insert tape "%s" into drive (current: %s)!' % (self.label, found_label))
+    def verify_in_drive(self, changer):
+        found_barcode = changer.read_barcode()
+        if found_barcode != self.barcode:
+            raise ValueError('Could not change to tape "%s", got "%s"!' % (self.barcode, found_barcode))
 
     def read_data(self, drive, mountpoint, readfiles=True):
         self.verify_in_drive(drive)

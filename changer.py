@@ -54,6 +54,6 @@ class Changer:
         index = inventory[barcode]
         check_output(["mtx", "-f", self.dev, "load", str(index), str(self.drive_index)])
 
-    def read_label(self):
+    def read_barcode(self):
         _, current_loaded = self.read_inventory()
         return current_loaded.get(self.drive_index, None)

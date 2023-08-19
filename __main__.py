@@ -65,19 +65,19 @@ def ask_for_tape(label):
         load_tape(label)
 
 def get_current_tape(create_new=False):
-    label = changer.read_label()
+    label = changer.read_barcode()
     if label is None:
         try:
             drive.load()
         except:
             return None
-        label = changer.read_label()
+        label = changer.read_barcode()
         if label is None:
             return None
 
     if not label in tapes:
         if create_new:
-            tape = Tape(label)
+            tape = Tape(label, barcode_from_label(label))
             tapes[label] = tape
             return tape
         return None
@@ -93,7 +93,7 @@ def format_current_tape(label=None, mount=False):
         label = make_tape_label()
     drive.format(label, serial_from_label(label))
 
-    tape = Tape(label)
+    tape = Tape(label, barcode_from_label(label))
     tape.verify_in_drive(drive)
     current_tape = tape
     if mount:
