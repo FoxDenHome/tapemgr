@@ -52,6 +52,7 @@ def load_tape(label):
 
 def ask_for_tape(label):
     global current_tape
+    barcode = barcode_from_label(label)
 
     if label is None:
         changer.eject()
@@ -62,32 +63,31 @@ def ask_for_tape(label):
 
     while True:
         current_tape = get_current_tape()
-        print(label, current_tape)
-        if current_tape and current_tape.label == label:
+        if current_tape and current_tape.barcode == barcode:
             drive.mount(TAPE_MOUNT)
             return
         changer.eject()
         load_tape(label)
 
 def get_current_tape(create_new=False):
-    label = changer.read_barcode()
-    if label is None:
+    barcode = changer.read_barcode()
+    if barcode is None:
         try:
             drive.load()
         except:
             return None
-        label = changer.read_barcode()
-        if label is None:
+        barcode = changer.read_barcode()
+        if barcode is None:
             return None
 
-    if not label in tapes:
+    if not barcode in tapes:
         if create_new:
-            tape = Tape(label, barcode_from_label(label))
-            tapes[label] = tape
+            tape = Tape(barcode)
+            tapes[barcode] = tape
             return tape
         return None
 
-    return tapes[label]
+    return tapes[barcode]
 
 def format_current_tape(label=None, mount=False):
     global current_tape
@@ -98,7 +98,7 @@ def format_current_tape(label=None, mount=False):
         label = make_tape_label()
     drive.format(label, serial_from_label(label))
 
-    tape = Tape(label, barcode_from_label(label))
+    tape = Tape(barcode_from_label(label))
     tape.verify_in_changer(changer)
     current_tape = tape
     if mount:
@@ -228,7 +228,7 @@ elif action == 'list':
 
     for name, info_tuple in files.items():
         info, tape = info_tuple
-        print('[%s] Name "%s", size %s, mtime %s' % (tape.label, name, format_size(info.size), format_mtime(info.mtime)))
+        print('[%s] Name "%s", size %s, mtime %s' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime)))
 elif action == 'find':
     best_info = None
     best_tape = None
@@ -236,20 +236,20 @@ elif action == 'find':
         for name, info in tape.files.items():
             if name != args.files[1]:
                 continue
-            print('Found copy of file on "%s", size %s, mtime %s' % (tape.label, format_size(info.size), format_mtime(info.mtime)))
+            print('Found copy of file on "%s", size %s, mtime %s' % (tape.barcode, format_size(info.size), format_mtime(info.mtime)))
             if best_info is not None and best_info.is_better_than(info):
                 continue
             best_info = info
             best_tape = tape
     if best_tape is not None:
-        print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.label, format_size(info.size), format_mtime(info.mtime)))
+        print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(info.size), format_mtime(info.mtime)))
     else:
         print('Could not find that file :(')
 elif action == 'mount':
     current_tape = get_current_tape(create_new=True)
     if current_tape is not None:
         drive.mount(TAPE_MOUNT)
-        print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.label, TAPE_MOUNT, TAPE_MOUNT))
+        print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.barcode, TAPE_MOUNT, TAPE_MOUNT))
     else:
         print('Do not recognize this tape!')
         changer.eject()

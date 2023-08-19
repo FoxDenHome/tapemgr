@@ -24,8 +24,7 @@ class FileInfo:
         return self.mtime > other.mtime
 
 class Tape:
-    def __init__(self, label, barcode):
-        self.label = label
+    def __init__(self, barcode):
         self.barcode = barcode
         self.files = {}
         self.size = 0

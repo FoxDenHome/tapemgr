@@ -8,7 +8,7 @@ def set_storage_dir(dir):
     TAPES_DIR = dir
 
 def save_tape(tape):
-    fh = open(path.join(TAPES_DIR, tape.label), 'wb')
+    fh = open(path.join(TAPES_DIR, tape.barcode), 'wb')
     dump(tape, fh)
     fh.close()
 
@@ -22,7 +22,7 @@ def load_all_tapes():
         try:
             fh = open(file.path, 'rb')
             tape = load(fh)
-            tapes[tape.label] = tape
+            tapes[tape.barcode] = tape
             fh.close()
         except:
             print('Error loading tape data "%s"' % file.name)
