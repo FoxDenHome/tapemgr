@@ -36,7 +36,6 @@ class Drive:
         if self.mountpoint == mountpoint:
             return False
         self.unmount()
-        self.load()
         self.set_encryption(True)
         self.mountpoint = mountpoint
         self.ltfs_process = Popen(['ltfs', '-o', 'devname=%s' % self.make_sg(), '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
