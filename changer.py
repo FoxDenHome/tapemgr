@@ -1,4 +1,4 @@
-from subprocess import check_output
+from subprocess import check_output, check_call
 
 class Changer:
     def __init__(self, dev, drive_index=0):
@@ -6,7 +6,7 @@ class Changer:
         self.drive_index = drive_index
 
     def eject(self):
-        pass
+        check_call(["mtx", "-f", self.dev, "eject"])
 
     def read_inventory(self):
         inventory = {}
