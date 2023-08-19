@@ -48,7 +48,7 @@ def load_tape(label):
     try:
         drive.load()
     except:
-        return None
+        pass
 
 def ask_for_tape(label):
     global current_tape
