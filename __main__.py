@@ -45,6 +45,10 @@ def load_tape(label):
     barcode = barcode_from_label(label)
     print('Loading tape label "%s" by barcode "%s"' % (label, barcode))
     changer.load_by_barcode(barcode)
+    try:
+        drive.load()
+    except:
+        return None
 
 def ask_for_tape(label):
     global current_tape
