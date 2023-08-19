@@ -27,34 +27,27 @@ def save_all_tapes():
 def refresh_current_tape():
     current_tape.read_data(changer, drive, TAPE_MOUNT, False)
 
-def make_tape_label():
+def make_tape_barcode():
     idx = 0
     while True:
         idx += 1
         label = TAPE_LABEL_FMT % (TAPE_PREFIX, idx, TAPE_SUFFIX)
-        if label not in tapes:
-            return label
+        barcode = '%s%s' % (label, TAPE_TYPE)
+        if barcode not in tapes:
+            return barcode
 
-def barcode_from_label(label):
-    return '%s%s' % (label, TAPE_TYPE)
-
-def serial_from_label(label):
-    return label
-
-def load_tape(label):
-    barcode = barcode_from_label(label)
-    print('Loading tape label "%s" by barcode "%s"' % (label, barcode))
+def load_tape(barcode):
+    print('Loading tape by barcode "%s"' % barcode)
     changer.load_by_barcode(barcode)
 
-def ask_for_tape(label):
+def ask_for_tape(barcode):
     global current_tape
-    barcode = barcode_from_label(label)
 
-    if label is None:
+    if barcode is None:
         changer.eject()
-        new_label = make_tape_label()
-        load_tape(new_label)
-        format_current_tape(new_label, True)
+        new_barcode = make_tape_barcode()
+        load_tape(new_barcode)
+        format_current_tape(new_barcode, True)
         return
 
     while True:
@@ -63,7 +56,7 @@ def ask_for_tape(label):
             drive.mount(TAPE_MOUNT)
             return
         changer.eject()
-        load_tape(label)
+        load_tape(barcode)
 
 def get_current_tape(create_new=False):
     barcode = changer.read_barcode()
@@ -79,24 +72,24 @@ def get_current_tape(create_new=False):
 
     return tapes[barcode]
 
-def format_current_tape(label=None, mount=False):
+def format_current_tape(barcode=None, mount=False):
     global current_tape
 
     if get_current_tape():
         raise ValueError('Tape is already in this program!')
-    if label is None:
-        label = make_tape_label()
-    drive.format(label, serial_from_label(label))
+    if barcode is None:
+        barcode = make_tape_barcode()
+    drive.format(barcode, barcode)
 
-    tape = Tape(barcode_from_label(label))
+    tape = Tape(barcode)
     tape.verify_in_changer(changer)
     current_tape = tape
     if mount:
         drive.mount(TAPE_MOUNT)
     tape.read_data(changer, drive, TAPE_MOUNT)
-    tapes[label] = tape
+    tapes[barcode] = tape
     save_tape(tape)
-    print ('Formatted tape with label "%s"!' % label)
+    print ('Formatted tape with barcode "%s"!' % barcode)
 
 def backup_file(file):
     global current_tape
@@ -123,10 +116,10 @@ def backup_file(file):
         drive.unmount()
         # Find new tape!
         found_existing_tape = False
-        for label, tape in tapes.items():
+        for barcode, tape in tapes.items():
             if tape.free >= min_size:
                 found_existing_tape = True
-                ask_for_tape(label)
+                ask_for_tape(barcode)
                 break
         if not found_existing_tape:
             ask_for_tape(None)
@@ -244,5 +237,5 @@ elif action == 'mount':
         print('Do not recognize this tape!')
         changer.eject()
 elif action == 'statistics':
-    for label, tape in tapes.items():
-        print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (label, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
+    for barcode, tape in tapes.items():
+        print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (barcode, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
