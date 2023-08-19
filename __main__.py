@@ -91,7 +91,7 @@ def format_current_tape(label=None, mount=False):
         raise ValueError('Tape is already in this program!')
     if label is None:
         label = make_tape_label()
-    drive.format(label, serial_from_label(label))
+    #drive.format(label, serial_from_label(label))
 
     tape = Tape(label, barcode_from_label(label))
     tape.verify_in_changer(changer)
