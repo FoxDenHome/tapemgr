@@ -54,6 +54,7 @@ def ask_for_tape(barcode):
         current_tape = get_current_tape()
         if current_tape and current_tape.barcode == barcode:
             drive.mount(TAPE_MOUNT)
+            current_tape.read_data(changer, drive, TAPE_MOUNT)
             return
         changer.eject()
         load_tape(barcode)
