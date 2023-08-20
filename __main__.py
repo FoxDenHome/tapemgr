@@ -4,7 +4,6 @@ from changer import Changer
 from os import path, lstat, scandir
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
-from datetime import datetime
 from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
 from util import logged_check_call, logged_call, format_size, format_mtime
