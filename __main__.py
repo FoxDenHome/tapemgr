@@ -25,6 +25,7 @@ should_exit = False
 def signal_exit_handler(sig, frame):
     global should_exit
     should_exit = True
+    print("Got exit signal, exiting ASAP...")
 signal(SIGINT, signal_exit_handler)
 signal(SIGTERM, signal_exit_handler)
 
