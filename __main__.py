@@ -71,7 +71,7 @@ def get_current_tape(create_new=False):
     if barcode is None:
         return None
 
-    if not barcode in tapes:
+    if barcode not in tapes:
         if create_new:
             tape = Tape(barcode)
             tapes[barcode] = tape
@@ -212,6 +212,9 @@ elif action == 'store':
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
+        changer.unload_current()
+elif action == 'unload':
+    changer.unload_current()
 elif action == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(changer, drive, TAPE_MOUNT)

@@ -1,7 +1,9 @@
-from subprocess import check_call, check_output, Popen
+from subprocess import check_call, Popen
 from os.path import ismount, basename
 from time import sleep
 from os import readlink
+
+TAPE_KEY_FILE = '/mnt/keydisk/tape.key'
 
 class Drive:
     def __init__(self, dev):
@@ -10,7 +12,10 @@ class Drive:
         self.ltfs_process = None
 
     def set_encryption(self, on):
-        check_call(['stenc', '-f', self.dev, '-e', 'on' if on else 'off', '-k', '/mnt/keydisk/tape.key', '-a', '1', '--ckod'])
+        if (not on) or (not TAPE_KEY_FILE):
+            check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
+            return
+        check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', TAPE_KEY_FILE, '-a', '1', '--ckod'])
 
     def load(self):
         self.unmount()
