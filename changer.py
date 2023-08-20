@@ -51,6 +51,13 @@ class Changer:
 
         return inventory, current_loaded, empty_slots
 
+    def unload_current(self):
+        _, current_loaded, empty_slots = self.read_inventory()
+
+        current_tape = current_loaded.get(self.drive_index, None)
+        if current_tape:
+            check_output(["mtx", "-f", self.dev, "unload", str(empty_slots[0]), str(self.drive_index)])
+
     def load_by_barcode(self, barcode):
         inventory, current_loaded, empty_slots = self.read_inventory()
 
