@@ -1,4 +1,4 @@
-from subprocess import check_output, check_call
+from util import logged_check_call, logged_check_output
 
 class Changer:
     def __init__(self, dev, drive_index=0):
@@ -6,14 +6,14 @@ class Changer:
         self.drive_index = drive_index
 
     def eject(self):
-        check_call(["mtx", "-f", self.dev, "eject"])
+        logged_check_call(["mtx", "-f", self.dev, "eject"])
 
     def read_inventory(self):
         inventory = {}
         current_loaded = {}
         empty_slots = []
     
-        res = check_output(["mtx", "-f", self.dev, "status"], encoding='utf-8')
+        res = logged_check_output(["mtx", "-f", self.dev, "status"], encoding='utf-8')
         for line in res.splitlines():
             line = line.strip()
             index_type = None
@@ -56,7 +56,7 @@ class Changer:
 
         current_tape = current_loaded.get(self.drive_index, None)
         if current_tape:
-            check_output(["mtx", "-f", self.dev, "unload", str(empty_slots[0]), str(self.drive_index)])
+            logged_check_call(["mtx", "-f", self.dev, "unload", str(empty_slots[0]), str(self.drive_index)])
 
     def load_by_barcode(self, barcode):
         inventory, current_loaded, empty_slots = self.read_inventory()
@@ -66,10 +66,10 @@ class Changer:
             return
         
         if current_tape:
-            check_output(["mtx", "-f", self.dev, "unload", str(empty_slots[0]), str(self.drive_index)])
+            logged_check_call(["mtx", "-f", self.dev, "unload", str(empty_slots[0]), str(self.drive_index)])
 
         index = inventory[barcode]
-        check_output(["mtx", "-f", self.dev, "load", str(index), str(self.drive_index)])
+        logged_check_call(["mtx", "-f", self.dev, "load", str(index), str(self.drive_index)])
 
     def read_barcode(self):
         _, current_loaded, _ = self.read_inventory()

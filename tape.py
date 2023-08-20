@@ -1,8 +1,8 @@
-from subprocess import check_output
 from os import scandir, path
 from stat import S_ISDIR, S_ISREG
 from dataclasses import dataclass
 from storage import save_tape
+from util import logged_check_output
 
 def dir_recurse(dir, tape, mountpoint_len):
     for file in scandir(dir):
@@ -39,7 +39,7 @@ class Tape:
         self.verify_in_changer(changer)
         did_mount = drive.mount(mountpoint)
 
-        line = check_output(['df', '-B1', mountpoint]).decode().split('\n')[1]
+        line = logged_check_output(['df', '-B1', mountpoint]).decode().split('\n')[1]
         _, size, _, free, _, _ = line.split()
         self.size = int(size)
         self.free = int(free)

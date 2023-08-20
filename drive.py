@@ -1,7 +1,8 @@
-from subprocess import check_call, Popen
+from subprocess import Popen
 from os.path import ismount, basename
 from time import sleep
 from os import readlink
+from util import logged_check_call
 
 TAPE_KEY_FILE = '/mnt/keydisk/tape.key'
 
@@ -13,19 +14,19 @@ class Drive:
 
     def set_encryption(self, on):
         if (not on) or (not TAPE_KEY_FILE):
-            check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
+            logged_check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
             return
-        check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', TAPE_KEY_FILE, '-a', '1', '--ckod'])
+        logged_check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', TAPE_KEY_FILE, '-a', '1', '--ckod'])
 
     def load(self):
         self.unmount()
-        check_call(['sg_start', '--load', self.dev])
+        logged_check_call(['sg_start', '--load', self.dev])
 
     def format(self, label, serial):
         self.unmount()
         self.load()
         self.set_encryption(True)
-        check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
+        logged_check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
 
     def make_sg(self):
         linkdest = readlink('/sys/class/scsi_tape/%s/device/generic' % self.dev.replace('/dev/', ''))
@@ -50,7 +51,7 @@ class Drive:
     def unmount(self):
         if self.mountpoint is None:
             return False
-        check_call(['umount', self.mountpoint])
+        logged_check_call(['umount', self.mountpoint])
         self.ltfs_process.wait()
         self.ltfs_process = None
         self.mountpoint = None
