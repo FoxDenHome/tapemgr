@@ -7,6 +7,7 @@ from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
 from datetime import datetime
 from argparse import ArgumentParser
+from signal import SIGINT, SIGTERM, signal
 
 TAPE_MOUNT = None
 TAPE_PREFIX = None
@@ -19,6 +20,13 @@ drive = None
 changer = None
 tapes = {}
 current_tape = None
+
+should_exit = False
+def signal_exit_handler(sig, frame):
+    global should_exit
+    should_exit = True
+signal(SIGINT, signal_exit_handler)
+signal(SIGTERM, signal_exit_handler)
 
 def save_all_tapes():
     for _, tape in tapes.items():
@@ -95,6 +103,9 @@ def format_current_tape(barcode=None, mount=False):
 def backup_file(file):
     global current_tape
 
+    if should_exit:
+        return
+
     name = path.abspath(file.path)
     dir = path.dirname(name)
 
@@ -138,6 +149,9 @@ def backup_file(file):
     refresh_current_tape()
 
 def backup_recursive(dir):
+    if should_exit:
+        return
+
     for file in scandir(dir):
             stat = file.stat(follow_symlinks=False)
             if S_ISDIR(stat.st_mode):
@@ -199,6 +213,7 @@ elif action == 'store':
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
+        changer.eject()
 elif action == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(changer, drive, TAPE_MOUNT)
