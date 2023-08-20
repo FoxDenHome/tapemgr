@@ -174,6 +174,7 @@ parser.add_argument('action', metavar='action', type=str, nargs=1, help='The act
 parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
 parser.add_argument('--device', dest='device', type=str, default='/dev/nst0')
 parser.add_argument('--changer', dest='changer', type=str, default='/dev/sch0')
+parser.add_argument('--changer-drive-index', dest='changer_drive_index', type=int, default=0)
 parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
 parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(path.dirname(__file__), 'tapes'))
 parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='P', help='Prefix to add to tape label and barcode')
@@ -193,7 +194,7 @@ TAPE_TYPE = args.tape_type
 TAPE_LABEL_FMT = f'%s%0{6 - (len(TAPE_PREFIX) + len(TAPE_SUFFIX))}d%s'
 
 drive = Drive(args.device)
-changer = Changer(args.changer)
+changer = Changer(args.changer, args.changer_drive_index)
 tapes = load_all_tapes()
 
 action = args.action[0]

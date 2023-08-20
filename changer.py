@@ -1,7 +1,7 @@
 from util import logged_check_call, logged_check_output
 
 class Changer:
-    def __init__(self, dev, drive_index=0):
+    def __init__(self, dev, drive_index):
         self.dev = dev
         self.drive_index = drive_index
 
