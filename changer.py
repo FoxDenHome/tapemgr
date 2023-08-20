@@ -11,6 +11,7 @@ class Changer:
     def read_inventory(self):
         inventory = {}
         current_loaded = {}
+        empty_slots = []
     
         res = check_output(["mtx", "-f", self.dev, "status"], encoding='utf-8')
         for line in res.splitlines():
@@ -23,9 +24,6 @@ class Changer:
             else:
                 continue
             sections = line.split(':')
-            status = sections[1].strip()
-            if not status.startswith('Full'):
-                continue
 
             index = None
 
@@ -34,6 +32,12 @@ class Changer:
                 if element_split[i] == 'Element':
                     index = int(element_split[i+1], 10)
                     break
+
+            status = sections[1].strip()
+            if not status.startswith('Full'):
+                if status.startswith('Empty'):
+                    empty_slots.append(index)
+                continue
 
             for sec in sections[2:]:
                 secsplit = sec.split('=')
@@ -45,15 +49,21 @@ class Changer:
                     elif index_type == 'drive':
                         current_loaded[index] = barcode
 
-        return inventory, current_loaded
+        return inventory, current_loaded, empty_slots
 
     def load_by_barcode(self, barcode):
-        inventory, current_loaded = self.read_inventory()
-        if current_loaded.get(self.drive_index, None) == barcode:
+        inventory, current_loaded, empty_slots = self.read_inventory()
+
+        current_tape = current_loaded.get(self.drive_index, None)
+        if current_tape == barcode:
             return
+        
+        if current_tape:
+            check_output(["mtx", "-f", self.dev, "unload", str(empty_slots[0]), str(self.drive_index)])
+
         index = inventory[barcode]
         check_output(["mtx", "-f", self.dev, "load", str(index), str(self.drive_index)])
 
     def read_barcode(self):
-        _, current_loaded = self.read_inventory()
+        _, current_loaded, _ = self.read_inventory()
         return current_loaded.get(self.drive_index, None)

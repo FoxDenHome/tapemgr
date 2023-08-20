@@ -52,7 +52,6 @@ def ask_for_tape(barcode):
     global current_tape
 
     if barcode is None:
-        changer.eject()
         new_barcode = make_tape_barcode()
         load_tape(new_barcode)
         format_current_tape(new_barcode, True)
@@ -64,7 +63,6 @@ def ask_for_tape(barcode):
             drive.mount(TAPE_MOUNT)
             current_tape.read_data(changer, drive, TAPE_MOUNT)
             return
-        changer.eject()
         load_tape(barcode)
 
 def get_current_tape(create_new=False):
@@ -213,7 +211,6 @@ elif action == 'store':
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
         drive.unmount()
-        changer.eject()
 elif action == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(changer, drive, TAPE_MOUNT)
@@ -251,7 +248,6 @@ elif action == 'mount':
         print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.barcode, TAPE_MOUNT, TAPE_MOUNT))
     else:
         print('Do not recognize this tape!')
-        changer.eject()
 elif action == 'statistics':
     for barcode, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (barcode, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
