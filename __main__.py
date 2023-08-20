@@ -7,7 +7,7 @@ from storage import save_tape, load_all_tapes, set_storage_dir
 from datetime import datetime
 from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
-from util import logged_check_call, logged_call
+from util import logged_check_call, logged_call, format_size, format_mtime
 
 TAPE_MOUNT = None
 TAPE_PREFIX = None
@@ -158,17 +158,6 @@ def backup_recursive(dir):
             elif S_ISREG(stat.st_mode):
                 backup_file(file)
 
-def format_size(size):
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
-        if size < 1024.0:
-            return '%3.1f %sB' % (size, unit)
-        size /= 1024.0
-    return '%.1f %sB' % (size, 'Yi')
-
-def format_mtime(mtime):
-    time = datetime.fromtimestamp(mtime)
-    return time.strftime("%Y-%m-%d %H:%M:%S")
-
 parser = ArgumentParser(description='Tape manager')
 parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
 parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
@@ -180,6 +169,7 @@ parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(p
 parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='P', help='Prefix to add to tape label and barcode')
 parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
 parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
+parser.add_argument('--tape-key', dest='tape_key', type=str, default='/mnt/keydisk/tape.key', help='Tape key file for encryption, blank to disable')
 
 args = parser.parse_args()
 
@@ -193,7 +183,7 @@ TAPE_SUFFIX = args.tape_suffix
 TAPE_TYPE = args.tape_type
 TAPE_LABEL_FMT = f'%s%0{6 - (len(TAPE_PREFIX) + len(TAPE_SUFFIX))}d%s'
 
-drive = Drive(args.device)
+drive = Drive(args.device, args.tape_key)
 changer = Changer(args.changer, args.changer_drive_index)
 tapes = load_all_tapes()
 

@@ -4,19 +4,18 @@ from time import sleep
 from os import readlink
 from util import logged_check_call
 
-TAPE_KEY_FILE = '/mnt/keydisk/tape.key'
-
 class Drive:
-    def __init__(self, dev):
+    def __init__(self, dev, key_file):
         self.dev = dev
+        self.key_file = key_file
         self.mountpoint = None
         self.ltfs_process = None
 
     def set_encryption(self, on):
-        if (not on) or (not TAPE_KEY_FILE):
+        if (not on) or (not self.key_file):
             logged_check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
             return
-        logged_check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', TAPE_KEY_FILE, '-a', '1', '--ckod'])
+        logged_check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', self.key_file, '-a', '1', '--ckod'])
 
     def load(self):
         self.unmount()
