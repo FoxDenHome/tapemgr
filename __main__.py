@@ -87,7 +87,7 @@ def format_current_tape(barcode=None, mount=False):
         raise ValueError('Tape is already in this program!')
     if barcode is None:
         barcode = make_tape_barcode()
-    drive.format(barcode, barcode)
+    drive.format(barcode, barcode[:6])
 
     tape = Tape(barcode)
     tape.verify_in_changer(changer)
