@@ -52,9 +52,7 @@ def ask_for_tape(barcode):
     global current_tape
 
     if barcode is None:
-        new_barcode = make_tape_barcode()
-        load_tape(new_barcode)
-        format_current_tape(new_barcode, True)
+        format_current_tape(True)
         return
 
     while True:
@@ -79,13 +77,15 @@ def get_current_tape(create_new=False):
 
     return tapes[barcode]
 
-def format_current_tape(barcode=None, mount=False):
+def format_current_tape(mount=False):
     global current_tape
 
     if get_current_tape():
         raise ValueError('Tape is already in this program!')
-    if barcode is None:
-        barcode = make_tape_barcode()
+
+    barcode = make_tape_barcode()
+    load_tape(barcode)
+
     drive.format(barcode, barcode[:6])
 
     tape = Tape(barcode)
