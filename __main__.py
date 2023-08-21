@@ -236,7 +236,7 @@ elif action == 'find':
     else:
         print('Could not find that file :(')
 elif action == 'mount':
-    current_tape = get_current_tape(create_new=True)
+    current_tape = get_current_tape()
     if current_tape is not None:
         drive.mount(TAPE_MOUNT)
         print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.barcode, TAPE_MOUNT, TAPE_MOUNT))
