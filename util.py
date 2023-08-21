@@ -22,4 +22,4 @@ def format_size(size):
 
 def format_mtime(mtime):
     time = datetime.fromtimestamp(mtime)
-    return time.strftime("%Y-%m-%d %H:%M:%S")
+    return time.strftime('%Y-%m-%d %H:%M:%S')
