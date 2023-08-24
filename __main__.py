@@ -98,6 +98,7 @@ def ask_for_tape(barcode: str | None):
     global current_tape
 
     if barcode is None:
+        changer.unload_current()
         format_current_tape(True)
         return
 
