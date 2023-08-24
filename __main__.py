@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from types import FrameType
-from typing import Literal, cast, overload, type_check_only
+from typing import Literal, cast, overload
 from tape import FileInfo, Tape
 from drive import Drive
 from changer import Changer
@@ -14,7 +14,6 @@ from util import logged_check_call, logged_call, format_size, format_mtime
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 TAPE_SIZE_NEW_SPARE = 2 * TAPE_SIZE_SPARE
 
-@type_check_only
 @dataclass
 class ArgParseResult:
     mount: str
