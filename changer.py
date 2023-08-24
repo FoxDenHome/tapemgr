@@ -1,18 +1,19 @@
 from util import logged_check_call, logged_check_output
 
 class Changer:
-    def __init__(self, dev, drive_index):
+    def __init__(self, dev: str, drive_index: int):
+        super().__init__()
         self.dev = dev
         self.drive_index = drive_index
 
-    def eject(self):
+    def eject(self) -> None:
         logged_check_call(['mtx', '-f', self.dev, 'eject'])
 
-    def read_inventory(self):
-        inventory = {}
-        current_loaded = {}
-        empty_slots = []
-    
+    def read_inventory(self) -> tuple[dict[str, int], dict[int,str], list[int]]:
+        inventory: dict[str, int] = {}
+        current_loaded: dict[int, str] = {}
+        empty_slots: list[int] = []
+
         res = logged_check_output(['mtx', '-f', self.dev, 'status'])
         for line in res.splitlines():
             line = line.strip()
@@ -32,6 +33,9 @@ class Changer:
                 if element_split[i] == 'Element':
                     index = int(element_split[i+1], 10)
                     break
+
+            if index is None:
+                continue
 
             status = sections[1].strip()
             if not status.startswith('Full'):
@@ -58,13 +62,13 @@ class Changer:
         if current_tape:
             logged_check_call(['mtx', '-f', self.dev, 'unload', str(empty_slots[0]), str(self.drive_index)])
 
-    def load_by_barcode(self, barcode):
+    def load_by_barcode(self, barcode: str):
         inventory, current_loaded, empty_slots = self.read_inventory()
 
         current_tape = current_loaded.get(self.drive_index, None)
         if current_tape == barcode:
             return
-        
+
         if current_tape:
             logged_check_call(['mtx', '-f', self.dev, 'unload', str(empty_slots[0]), str(self.drive_index)])
 

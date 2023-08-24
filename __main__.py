@@ -1,39 +1,84 @@
+from dataclasses import dataclass
+from types import FrameType
+from typing import Literal, cast, overload, type_check_only
 from tape import FileInfo, Tape
 from drive import Drive
 from changer import Changer
-from os import path, lstat, scandir
+from os import DirEntry, path, lstat, scandir
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
 from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
 from util import logged_check_call, logged_call, format_size, format_mtime
 
-TAPE_MOUNT = None
-TAPE_PREFIX = None
-TAPE_SUFFIX = None
-TAPE_TYPE = None
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 TAPE_SIZE_NEW_SPARE = 2 * TAPE_SIZE_SPARE
-TAPE_LABEL_FMT = None
 
-drive = None
-changer = None
-tapes = {}
+@type_check_only
+@dataclass
+class ArgParseResult:
+    mount: str
+    tape_prefix: str
+    tape_type: str
+    tape_dir: str
+    tape_suffix: str
+    device: str
+    tape_key: str
+    changer: str
+    changer_drive_index: int
+    action: list[str]
+    files: list[str]
+
+parser = ArgumentParser(description='Tape manager')
+_ = parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
+_ = parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
+_ = parser.add_argument('--device', dest='device', type=str, default='/dev/nst0')
+_ = parser.add_argument('--changer', dest='changer', type=str, default='/dev/sch0')
+_ = parser.add_argument('--changer-drive-index', dest='changer_drive_index', type=int, default=0)
+_ = parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
+_ = parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(path.dirname(__file__), 'tapes'))
+_ = parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='P', help='Prefix to add to tape label and barcode')
+_ = parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
+_ = parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
+_ = parser.add_argument('--tape-key', dest='tape_key', type=str, default='/mnt/keydisk/tape.key', help='Tape key file for encryption, blank to disable')
+
+args = cast(ArgParseResult, parser.parse_args())
+
+if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
+    raise ValueError('Tape type must be L#')
+
+set_storage_dir(args.tape_dir)
+TAPE_MOUNT = args.mount
+TAPE_PREFIX = args.tape_prefix
+TAPE_SUFFIX = args.tape_suffix
+TAPE_TYPE = args.tape_type
+TAPE_LABEL_FMT = f'%s%0{6 - (len(TAPE_PREFIX) + len(TAPE_SUFFIX))}d%s'
+
 current_tape = None
 
+drive = Drive(args.device, args.tape_key)
+changer = Changer(args.changer, args.changer_drive_index)
+tapes = load_all_tapes()
+action = args.action[0]
+
 should_exit = False
-def signal_exit_handler(sig, frame):
+
+
+def signal_exit_handler(_sig: int, _frame: FrameType | None) -> None:
     global should_exit
     should_exit = True
     print('Got exit signal, exiting ASAP...')
-signal(SIGINT, signal_exit_handler)
-signal(SIGTERM, signal_exit_handler)
+_ = signal(SIGINT, signal_exit_handler)
+_ = signal(SIGTERM, signal_exit_handler)
 
 def save_all_tapes():
-    for _, tape in tapes.items():
+    for tape in tapes.values():
         save_tape(tape)
 
 def refresh_current_tape():
+    global current_tape
+    if not current_tape:
+        raise Exception("no tape selected")
     current_tape.read_data(changer, drive, TAPE_MOUNT, False)
 
 def make_tape_barcode():
@@ -45,11 +90,11 @@ def make_tape_barcode():
         if barcode not in tapes:
             return barcode
 
-def load_tape(barcode):
+def load_tape(barcode: str):
     print('Loading tape by barcode "%s"' % barcode)
     changer.load_by_barcode(barcode)
 
-def ask_for_tape(barcode):
+def ask_for_tape(barcode: str | None):
     global current_tape
 
     if barcode is None:
@@ -64,7 +109,13 @@ def ask_for_tape(barcode):
             return
         load_tape(barcode)
 
-def get_current_tape(create_new=False):
+@overload
+def get_current_tape(create_new:Literal[True]) -> Tape: ...
+
+@overload
+def get_current_tape(create_new:bool=False) -> Tape | None: ...
+
+def get_current_tape(create_new:bool=False):
     barcode = changer.read_barcode()
     if barcode is None:
         return None
@@ -78,7 +129,7 @@ def get_current_tape(create_new=False):
 
     return tapes[barcode]
 
-def format_current_tape(mount=False):
+def format_current_tape(mount:bool=False):
     global current_tape
 
     if get_current_tape():
@@ -99,7 +150,7 @@ def format_current_tape(mount=False):
     save_tape(tape)
     print ('Formatted tape with barcode "%s"!' % barcode)
 
-def backup_file(file):
+def backup_file(file: DirEntry[str]):
     global current_tape
 
     if should_exit:
@@ -111,7 +162,7 @@ def backup_file(file):
     fstat = file.stat(follow_symlinks=False)
     finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
-    for _, tape in tapes.items():
+    for tape in tapes.values():
         if name in tape.files and not finfo.is_better_than(tape.files[name]):
             print('[SKIP] %s' % name)
             return
@@ -149,47 +200,17 @@ def backup_file(file):
 
     refresh_current_tape()
 
-def backup_recursive(dir):
+def backup_recursive(dir: str):
     if should_exit:
         return
 
     for file in scandir(dir):
-            stat = file.stat(follow_symlinks=False)
-            if S_ISDIR(stat.st_mode):
-                backup_recursive(file.path)
-            elif S_ISREG(stat.st_mode):
-                backup_file(file)
+        stat = file.stat(follow_symlinks=False)
+        if S_ISDIR(stat.st_mode):
+            backup_recursive(file.path)
+        elif S_ISREG(stat.st_mode):
+            backup_file(file)
 
-parser = ArgumentParser(description='Tape manager')
-parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
-parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
-parser.add_argument('--device', dest='device', type=str, default='/dev/nst0')
-parser.add_argument('--changer', dest='changer', type=str, default='/dev/sch0')
-parser.add_argument('--changer-drive-index', dest='changer_drive_index', type=int, default=0)
-parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
-parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.join(path.dirname(__file__), 'tapes'))
-parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='P', help='Prefix to add to tape label and barcode')
-parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
-parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
-parser.add_argument('--tape-key', dest='tape_key', type=str, default='/mnt/keydisk/tape.key', help='Tape key file for encryption, blank to disable')
-
-args = parser.parse_args()
-
-if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
-    raise ValueError('Tape type must be L#')
-
-set_storage_dir(args.tape_dir)
-TAPE_MOUNT = args.mount
-TAPE_PREFIX = args.tape_prefix
-TAPE_SUFFIX = args.tape_suffix
-TAPE_TYPE = args.tape_type
-TAPE_LABEL_FMT = f'%s%0{6 - (len(TAPE_PREFIX) + len(TAPE_SUFFIX))}d%s'
-
-drive = Drive(args.device, args.tape_key)
-changer = Changer(args.changer, args.changer_drive_index)
-tapes = load_all_tapes()
-
-action = args.action[0]
 
 if action == 'format':
     format_current_tape()
@@ -212,10 +233,10 @@ elif action == 'index':
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(changer, drive, TAPE_MOUNT)
 elif action == 'list':
-    files = {}
-    for _, tape in tapes.items():
+    files: dict[str, tuple[FileInfo, Tape]] = {}
+    for tape in tapes.values():
         for name, info in tape.files.items():
-            if name in files and not info.is_better_than(files[name][1]):
+            if name in files and not info.is_better_than(files[name][0]):
                 continue
             files[name] = (info, tape)
 
@@ -223,9 +244,9 @@ elif action == 'list':
         info, tape = info_tuple
         print('[%s] Name "%s", size %s, mtime %s' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime)))
 elif action == 'find':
-    best_info = None
-    best_tape = None
-    for _, tape in tapes.items():
+    best_info: FileInfo | None = None
+    best_tape: Tape | None = None
+    for tape in tapes.values():
         for name, info in tape.files.items():
             if name != args.files[1]:
                 continue
@@ -234,8 +255,8 @@ elif action == 'find':
                 continue
             best_info = info
             best_tape = tape
-    if best_tape is not None:
-        print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(info.size), format_mtime(info.mtime)))
+    if best_tape is not None and best_info is not None:
+        print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(best_info.size), format_mtime(best_info.mtime)))
     else:
         print('Could not find that file :(')
 elif action == 'mount':

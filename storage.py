@@ -1,27 +1,36 @@
+# pyright: reportImportCycles=false
 from os import path, scandir
 from pickle import load, dump
+from typing import TYPE_CHECKING, Any, cast
 
-TAPES_DIR = None
+if TYPE_CHECKING:
+  from tape import Tape
+else:
+    Tape = Any
 
-def set_storage_dir(dir):
-    global TAPES_DIR
-    TAPES_DIR = dir
+tapes_dir: str | None = None
 
-def save_tape(tape):
-    fh = open(path.join(TAPES_DIR, tape.barcode), 'wb')
+def set_storage_dir(dir: str):
+    global tapes_dir
+    tapes_dir = dir
+
+def save_tape(tape: Tape):
+    if not tapes_dir:
+        raise Exception("Tapes dir not set")
+    fh = open(path.join(tapes_dir, tape.barcode), 'wb')
     dump(tape, fh)
     fh.close()
 
 def load_all_tapes():
-    tapes = {}
-    for file in scandir(TAPES_DIR):
+    tapes: dict[str, Tape] = {}
+    for file in scandir(tapes_dir):
         if not file.is_file():
             continue
         if file.name[0] == '.':
             continue
         try:
             fh = open(file.path, 'rb')
-            tape = load(fh)
+            tape = cast(Tape, load(fh))
             tapes[tape.barcode] = tape
             fh.close()
         except:

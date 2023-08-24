@@ -5,13 +5,16 @@ from os import readlink
 from util import logged_check_call
 
 class Drive:
-    def __init__(self, dev, key_file):
+    mountpoint: str | None
+    ltfs_process: Popen[bytes] | None
+    def __init__(self, dev: str, key_file: str):
+        super().__init__()
         self.dev = dev
         self.key_file = key_file
         self.mountpoint = None
         self.ltfs_process = None
 
-    def set_encryption(self, on):
+    def set_encryption(self, on: bool):
         if (not on) or (not self.key_file):
             logged_check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
             return
@@ -21,7 +24,7 @@ class Drive:
         self.unmount()
         logged_check_call(['sg_start', '--load', self.dev])
 
-    def format(self, label, serial):
+    def format(self, label: str, serial: str):
         self.unmount()
         self.load()
         self.set_encryption(True)
@@ -31,7 +34,7 @@ class Drive:
         linkdest = readlink('/sys/class/scsi_tape/%s/device/generic' % self.dev.replace('/dev/', ''))
         return '/dev/%s' % basename(linkdest)
 
-    def mount(self, mountpoint):
+    def mount(self, mountpoint: str):
         if self.mountpoint == mountpoint:
             return False
         self.unmount()
@@ -47,11 +50,12 @@ class Drive:
             raise SystemError('Could not mount LTFS tape!')
         return True
 
-    def unmount(self):
+    def unmount(self) -> None:
+        if self.ltfs_process is None:
+            return
         if self.mountpoint is None:
-            return False
+            return
         logged_check_call(['umount', self.mountpoint])
-        self.ltfs_process.wait()
+        _ = self.ltfs_process.wait()
         self.ltfs_process = None
         self.mountpoint = None
-        return True
