@@ -5,6 +5,7 @@ from tape import FileInfo, Tape
 from drive import Drive
 from changer import Changer
 from os import path, lstat, listdir, stat_result
+from os.path import join as path_join
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
 from argparse import ArgumentParser
@@ -203,11 +204,12 @@ def backup_recursive(dir: str):
         return
 
     for file in listdir(dir):
-        stat = lstat(file)
+        fullname = path_join(dir, file)
+        stat = lstat(fullname)
         if S_ISDIR(stat.st_mode):
-            backup_recursive(file)
+            backup_recursive(fullname)
         elif S_ISREG(stat.st_mode):
-            backup_file(file, stat)
+            backup_file(fullname, stat)
 
 
 if action == 'format':
