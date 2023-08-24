@@ -39,7 +39,7 @@ class Tape:
         self.verify_in_changer(changer)
         did_mount = drive.mount(mountpoint)
 
-        line = logged_check_output(['df', '-B1', mountpoint]).decode().split('\n')[1]
+        line = logged_check_output(['df', '-B1', mountpoint]).split('\n')[1]
         _, size, _, free, _, _ = line.split()
         self.size = int(size)
         self.free = int(free)
