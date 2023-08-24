@@ -4,7 +4,7 @@ from typing import Literal, cast, overload, type_check_only
 from tape import FileInfo, Tape
 from drive import Drive
 from changer import Changer
-from os import DirEntry, path, lstat, scandir
+from os import path, lstat, listdir, stat_result
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
 from argparse import ArgumentParser
@@ -104,7 +104,7 @@ def ask_for_tape(barcode: str | None):
     while True:
         current_tape = get_current_tape()
         if current_tape and current_tape.barcode == barcode:
-            drive.mount(TAPE_MOUNT)
+            _ = drive.mount(TAPE_MOUNT)
             current_tape.read_data(changer, drive, TAPE_MOUNT)
             return
         load_tape(barcode)
@@ -144,22 +144,21 @@ def format_current_tape(mount:bool=False):
     tape.verify_in_changer(changer)
     current_tape = tape
     if mount:
-        drive.mount(TAPE_MOUNT)
+        _ = drive.mount(TAPE_MOUNT)
     tape.read_data(changer, drive, TAPE_MOUNT)
     tapes[barcode] = tape
     save_tape(tape)
     print ('Formatted tape with barcode "%s"!' % barcode)
 
-def backup_file(file: DirEntry[str]):
+def backup_file(file: str, fstat: stat_result):
     global current_tape
 
     if should_exit:
         return
 
-    name = path.abspath(file.path)
+    name = path.abspath(file)
     dir = path.dirname(name)
 
-    fstat = file.stat(follow_symlinks=False)
     finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
     for tape in tapes.values():
@@ -187,7 +186,7 @@ def backup_file(file: DirEntry[str]):
                 break
         if not found_existing_tape:
             ask_for_tape(None)
-        drive.mount(TAPE_MOUNT)
+        _ = drive.mount(TAPE_MOUNT)
         refresh_current_tape()
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
@@ -204,12 +203,12 @@ def backup_recursive(dir: str):
     if should_exit:
         return
 
-    for file in scandir(dir):
-        stat = file.stat(follow_symlinks=False)
+    for file in listdir(dir):
+        stat = lstat(file)
         if S_ISDIR(stat.st_mode):
-            backup_recursive(file.path)
+            backup_recursive(file)
         elif S_ISREG(stat.st_mode):
-            backup_file(file)
+            backup_file(file, stat)
 
 
 if action == 'format':
@@ -221,7 +220,7 @@ elif action == 'store':
             if S_ISDIR(stat.st_mode):
                 backup_recursive(name)
             elif S_ISREG(stat.st_mode):
-                backup_file(name)
+                backup_file(name, stat)
             else:
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
     finally:
@@ -262,7 +261,7 @@ elif action == 'find':
 elif action == 'mount':
     current_tape = get_current_tape()
     if current_tape is not None:
-        drive.mount(TAPE_MOUNT)
+        _ = drive.mount(TAPE_MOUNT)
         print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.barcode, TAPE_MOUNT, TAPE_MOUNT))
     else:
         print('Do not recognize this tape!')
