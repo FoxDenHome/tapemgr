@@ -13,7 +13,7 @@ class Changer:
         current_loaded = {}
         empty_slots = []
     
-        res = logged_check_output(['mtx', '-f', self.dev, 'status'], encoding='utf-8')
+        res = logged_check_output(['mtx', '-f', self.dev, 'status'])
         for line in res.splitlines():
             line = line.strip()
             index_type = None
