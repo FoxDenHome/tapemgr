@@ -13,6 +13,7 @@ TAPE_PREFIX = None
 TAPE_SUFFIX = None
 TAPE_TYPE = None
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
+TAPE_SIZE_NEW_SPARE = 2 * TAPE_SIZE_SPARE
 TAPE_LABEL_FMT = None
 
 drive = None
@@ -118,6 +119,7 @@ def backup_file(file):
     print('[STOR] %s' % name)
 
     min_size = fstat.st_size + TAPE_SIZE_SPARE
+    min_size_new = fstat.st_size + TAPE_SIZE_NEW_SPARE
 
     if current_tape is not None and current_tape.free < min_size:
         refresh_current_tape()
@@ -125,6 +127,7 @@ def backup_file(file):
     while current_tape is None or current_tape.free < min_size:
         drive.unmount()
         # Find new tape!
+        min_size = min_size_new
         found_existing_tape = False
         for barcode, tape in tapes.items():
             if tape.free >= min_size:
