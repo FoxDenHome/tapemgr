@@ -16,7 +16,7 @@ def set_storage_dir(dir: str):
 
 def save_tape(tape: Tape):
     if not tapes_dir:
-        raise Exception("Tapes dir not set")
+        raise Exception('Tapes dir not set')
     fh = open(path.join(tapes_dir, tape.barcode), 'wb')
     dump(tape, fh)
     fh.close()

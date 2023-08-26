@@ -13,7 +13,7 @@ class FileInfo:
     size: int
     mtime: float
 
-    def is_better_than(self, other: "FileInfo"):
+    def is_better_than(self, other: 'FileInfo'):
         if self.mtime == other.mtime:
             return self.size > other.size
         return self.mtime > other.mtime
@@ -32,8 +32,11 @@ class Tape:
             raise ValueError('Could not change to tape "%s", got "%s"!' % (self.barcode, found_barcode))
 
     def read_data(self, changer: Changer, drive: Drive, mountpoint: str, readfiles:bool=True):
-        self.verify_in_changer(changer)
-        did_mount = drive.mount(mountpoint)
+        if not drive.is_mounter(self):
+            self.verify_in_changer(changer)
+            did_mount = drive.mount(self, mountpoint)
+        else:
+            did_mount = False
 
         line = logged_check_output(['df', '-B1', mountpoint]).split('\n')[1]
         _, size, _, free, _, _ = line.split()

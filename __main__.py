@@ -89,7 +89,7 @@ def save_all_tapes():
 def refresh_current_tape():
     global current_tape
     if not current_tape:
-        raise Exception("no tape selected")
+        raise Exception('no tape selected')
     current_tape.read_data(changer, drive, TAPE_MOUNT, False)
 
 def make_tape_barcode():
@@ -116,7 +116,7 @@ def ask_for_tape(barcode: str | None):
     while True:
         current_tape = get_current_tape()
         if current_tape and current_tape.barcode == barcode:
-            _ = drive.mount(TAPE_MOUNT)
+            _ = drive.mount(current_tape, TAPE_MOUNT)
             current_tape.read_data(changer, drive, TAPE_MOUNT)
             return
         load_tape(barcode)
@@ -156,7 +156,7 @@ def format_current_tape(mount:bool=False):
     tape.verify_in_changer(changer)
     current_tape = tape
     if mount:
-        _ = drive.mount(TAPE_MOUNT)
+        _ = drive.mount(current_tape, TAPE_MOUNT)
     tape.read_data(changer, drive, TAPE_MOUNT)
     tapes[barcode] = tape
     save_tape(tape)
@@ -198,7 +198,7 @@ def backup_file(file: str, fstat: stat_result):
                 break
         if not found_existing_tape:
             ask_for_tape(None)
-        _ = drive.mount(TAPE_MOUNT)
+        _ = drive.mount(current_tape, TAPE_MOUNT)
         refresh_current_tape()
 
     tape_name = '%s%s' % (TAPE_MOUNT, name)
@@ -274,7 +274,7 @@ elif action == 'find':
 elif action == 'mount':
     current_tape = get_current_tape()
     if current_tape is not None:
-        _ = drive.mount(TAPE_MOUNT)
+        _ = drive.mount(current_tape, TAPE_MOUNT)
         print('Mounted "%s" to "%s", run "umount %s" and wait for eject once done!' % (current_tape.barcode, TAPE_MOUNT, TAPE_MOUNT))
     else:
         print('Do not recognize this tape!')
