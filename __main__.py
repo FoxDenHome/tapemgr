@@ -5,7 +5,7 @@ from tape import FileInfo, Tape
 from drive import Drive
 from changer import Changer
 from os import path, lstat, listdir, stat_result
-from os.path import join as path_join
+from os.path import join as path_join, basename
 from stat import S_ISDIR, S_ISREG
 from storage import save_tape, load_all_tapes, set_storage_dir
 from argparse import ArgumentParser
@@ -26,6 +26,7 @@ class ArgParseResult:
     tape_key: str
     changer: str
     changer_drive_index: int
+    include_hidden: bool
     action: list[str]
     files: list[str]
 
@@ -41,6 +42,7 @@ _ = parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='
 _ = parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
 _ = parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
 _ = parser.add_argument('--tape-key', dest='tape_key', type=str, default='/mnt/keydisk/tape.key', help='Tape key file for encryption, blank to disable')
+_ = parser.add_argument('--include-hidden', dest='include_hidden', action='store_true', help='Include hidden files in backup (default: false)')
 
 args = cast(ArgParseResult, parser.parse_args())
 
@@ -53,6 +55,8 @@ TAPE_PREFIX = args.tape_prefix
 TAPE_SUFFIX = args.tape_suffix
 TAPE_TYPE = args.tape_type
 TAPE_LABEL_FMT = f'%s%0{6 - (len(TAPE_PREFIX) + len(TAPE_SUFFIX))}d%s'
+
+INCLUDE_HIDDEN = args.include_hidden
 
 current_tape = None
 
@@ -70,6 +74,13 @@ def signal_exit_handler(_sig: int, _frame: FrameType | None) -> None:
     print('Got exit signal, exiting ASAP...')
 _ = signal(SIGINT, signal_exit_handler)
 _ = signal(SIGTERM, signal_exit_handler)
+
+def should_backup_filename(name: str) -> bool:
+    if should_exit:
+        return False
+    if INCLUDE_HIDDEN:
+        return True
+    return basename(name)[0] != '.'
 
 def save_all_tapes():
     for tape in tapes.values():
@@ -154,7 +165,7 @@ def format_current_tape(mount:bool=False):
 def backup_file(file: str, fstat: stat_result):
     global current_tape
 
-    if should_exit:
+    if not should_backup_filename(file):
         return
 
     name = path.abspath(file)
@@ -201,7 +212,7 @@ def backup_file(file: str, fstat: stat_result):
     refresh_current_tape()
 
 def backup_recursive(dir: str):
-    if should_exit:
+    if not should_backup_filename(dir):
         return
 
     for file in listdir(dir):
