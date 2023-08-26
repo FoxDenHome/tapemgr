@@ -242,6 +242,7 @@ elif action == 'store':
 elif action == 'unload':
     changer.unload_current()
 elif action == 'index':
+    changer.load_by_barcode(args.files[0])
     current_tape = get_current_tape(create_new=True)
     current_tape.read_data(changer, drive, TAPE_MOUNT)
 elif action == 'list':
