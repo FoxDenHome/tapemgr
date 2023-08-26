@@ -272,6 +272,7 @@ elif action == 'find':
     else:
         print('Could not find that file :(')
 elif action == 'mount':
+    changer.load_by_barcode(args.files[0])
     current_tape = get_current_tape()
     if current_tape is not None:
         _ = drive.mount(current_tape, TAPE_MOUNT)
