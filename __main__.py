@@ -244,7 +244,11 @@ elif action == 'unload':
 elif action == 'index':
     changer.load_by_barcode(args.files[0])
     current_tape = get_current_tape(create_new=True)
-    current_tape.read_data(changer, drive, TAPE_MOUNT)
+    try:
+        current_tape.read_data(changer, drive, TAPE_MOUNT)
+    finally:
+        drive.unmount()
+        changer.unload_current()
 elif action == 'list':
     files: dict[str, tuple[FileInfo, Tape]] = {}
     for tape in tapes.values():
