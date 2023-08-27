@@ -44,10 +44,11 @@ class Manager:
         self.tape_type = type
         self.tape_barcode_fmt = f'%s%0{6 - (len(self.tape_barcode_prefix) + len(self.tape_barcode_suffix))}d%s%s'
 
-    def refresh_current_tape(self):
+    def refresh_current_tape(self, readfiles: bool = False):
         if not self.current_tape:
             raise Exception('no tape selected')
-        self.current_tape.read_data(self.changer, self.drive, self.mountpoint, False)
+        self.current_tape.read_data(self.changer, self.drive, self.mountpoint, readfiles)
+        self.storage.save(self.current_tape)
 
     def make_tape_barcode(self):
         idx = 0
@@ -71,7 +72,7 @@ class Manager:
             self.current_tape = self.get_current_tape()
             if self.current_tape and self.current_tape.barcode == barcode:
                 _ = self.drive.mount(self.current_tape, self.mountpoint)
-                self.current_tape.read_data(self.changer, self.drive, self.mountpoint)
+                self.refresh_current_tape(True)
                 return
             self.load_tape(barcode)
 
@@ -116,9 +117,7 @@ class Manager:
         self.current_tape = tape
         if mount:
             _ = self.drive.mount(self.current_tape, self.mountpoint)
-        tape.read_data(self.changer, self.drive, self.mountpoint)
-        self.storage.tapes[barcode] = tape
-        self.storage.save(tape)
+        self.refresh_current_tape(True)
         print ('Formatted tape with barcode "%s"!' % barcode)
 
     def backup_file(self, file: str, fstat: stat_result):
@@ -235,4 +234,4 @@ class Manager:
     def index_tape(self, barcode: str) -> None:
         self.changer.load_by_barcode(barcode)
         self.current_tape = self.get_current_tape(create_new=True)
-        self.current_tape.read_data(self.changer, self.drive, self.mountpoint)
+        self.refresh_current_tape(True)

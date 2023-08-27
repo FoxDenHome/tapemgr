@@ -24,6 +24,7 @@ class Storage:
         fh = open(path.join(self.dir, tape.barcode), 'wb')
         dump(tape, fh)
         fh.close()
+        self.tapes[tape.barcode] = tape
 
     def save_all(self) -> None:
         for tape in self.tapes.values():

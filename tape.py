@@ -3,7 +3,6 @@ from stat import S_ISDIR, S_ISREG
 from dataclasses import dataclass
 from changer import Changer
 from drive import Drive
-from storage import save_tape
 from util import logged_check_output
 
 
@@ -46,8 +45,6 @@ class Tape:
         if readfiles:
             self.files = {}
             dir_recurse(mountpoint, self, len(mountpoint))
-
-        save_tape(self)
 
         if did_mount:
             drive.unmount()
