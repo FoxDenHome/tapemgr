@@ -105,7 +105,8 @@ class Changer:
         if drive_slot.barcode == barcode:
             return
 
-        self._unload_slot(drive_slot, storage_inventory)
+        if not drive_slot.empty:
+            self._unload_slot(drive_slot, storage_inventory)
 
         storage_slot = self._find_by_barcode(barcode, storage_inventory)
         if not storage_slot:
