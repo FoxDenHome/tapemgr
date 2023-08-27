@@ -129,7 +129,7 @@ def get_current_tape(create_new:bool=False) -> Tape | None: ...
 
 def get_current_tape(create_new:bool=False):
     barcode = changer.read_barcode()
-    if barcode is None:
+    if not barcode:
         return None
 
     if barcode not in tapes:
