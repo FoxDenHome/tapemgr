@@ -287,3 +287,7 @@ elif action == 'mount':
 elif action == 'statistics':
     for barcode, tape in tapes.items():
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (barcode, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
+elif action == 'export':
+    changer.export_to_iobay_by_barcode(args.files[0])
+elif action == 'import':
+    changer.import_from_iobay()
