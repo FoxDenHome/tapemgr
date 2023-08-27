@@ -10,29 +10,37 @@ else:
 
 tapes_dir: str | None = None
 
-def set_storage_dir(dir: str):
-    global tapes_dir
-    tapes_dir = dir
+class Storage:
+    dir: str
+    tapes: dict[str, Tape]
+    
+    def __init__(self, dir: str) -> None:
+        super().__init__()
+        self.dir = dir
+        self.tapes = {}
+        self.load_all()
 
-def save_tape(tape: Tape):
-    if not tapes_dir:
-        raise Exception('Tapes dir not set')
-    fh = open(path.join(tapes_dir, tape.barcode), 'wb')
-    dump(tape, fh)
-    fh.close()
+    def save(self, tape: Tape) -> None:
+        fh = open(path.join(self.dir, tape.barcode), 'wb')
+        dump(tape, fh)
+        fh.close()
 
-def load_all_tapes():
-    tapes: dict[str, Tape] = {}
-    for file in scandir(tapes_dir):
-        if not file.is_file():
-            continue
-        if file.name[0] == '.':
-            continue
-        try:
-            fh = open(file.path, 'rb')
-            tape = cast(Tape, load(fh))
-            tapes[tape.barcode] = tape
-            fh.close()
-        except:
-            print('Error loading tape data "%s"' % file.name)
-    return tapes
+    def save_all(self) -> None:
+        for tape in self.tapes.values():
+            self.save(tape)
+
+    def load_all(self) -> None:
+        tapes: dict[str, Tape] = {}
+        for file in scandir(tapes_dir):
+            if not file.is_file():
+                continue
+            if file.name[0] == '.':
+                continue
+            try:
+                fh = open(file.path, 'rb')
+                tape = cast(Tape, load(fh))
+                tapes[tape.barcode] = tape
+                fh.close()
+            except:
+                print('Error loading tape data "%s"' % file.name)
+        self.tapes = tapes
