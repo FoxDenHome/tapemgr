@@ -265,7 +265,7 @@ elif action == 'find':
     best_tape: Tape | None = None
     for tape in tapes.values():
         for name, info in tape.files.items():
-            if name != args.files[1]:
+            if name != args.files[0]:
                 continue
             print('Found copy of file on "%s", size %s, mtime %s' % (tape.barcode, format_size(info.size), format_mtime(info.mtime)))
             if best_info is not None and best_info.is_better_than(info):
