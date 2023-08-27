@@ -90,7 +90,7 @@ class Changer:
         empty_slot = self._find_first_empty(storage_inventory)
         if not empty_slot:
             raise ValueError('No empty storage slot found')
-        logged_check_call(['mtx', '-f', self.dev, 'unload', str(empty_slot), str(drive_slot.index)])
+        logged_check_call(['mtx', '-f', self.dev, 'unload', str(empty_slot.index), str(drive_slot.index)])
 
     def unload_current(self) -> None:
         storage_inventory, drive_inventory = self.read_inventory()
