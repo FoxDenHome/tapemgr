@@ -8,8 +8,6 @@ if TYPE_CHECKING:
 else:
     Tape = Any
 
-tapes_dir: str | None = None
-
 class Storage:
     dir: str
     tapes: dict[str, Tape]
@@ -32,7 +30,7 @@ class Storage:
 
     def load_all(self) -> None:
         tapes: dict[str, Tape] = {}
-        for file in scandir(tapes_dir):
+        for file in scandir(self.dir):
             if not file.is_file():
                 continue
             if file.name[0] == '.':
