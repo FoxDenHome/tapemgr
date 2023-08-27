@@ -84,6 +84,9 @@ class Changer:
         return None
 
     def _unload_slot(self, drive_slot: Slot, storage_inventory: dict[int, Slot]) -> None:
+        if drive_slot.empty:
+            return
+
         empty_slot = self._find_first_empty(storage_inventory)
         if not empty_slot:
             raise ValueError('No empty storage slot found')
@@ -92,10 +95,6 @@ class Changer:
     def unload_current(self) -> None:
         storage_inventory, drive_inventory = self.read_inventory()
         drive_slot = drive_inventory[self.drive_index]
-
-        if drive_slot.empty:
-            return
-
         self._unload_slot(drive_slot, storage_inventory)
 
     def load_by_barcode(self, barcode: str) -> None:
@@ -105,8 +104,7 @@ class Changer:
         if drive_slot.barcode == barcode:
             return
 
-        if not drive_slot.empty:
-            self._unload_slot(drive_slot, storage_inventory)
+        self._unload_slot(drive_slot, storage_inventory)
 
         storage_slot = self._find_by_barcode(barcode, storage_inventory)
         if not storage_slot:
