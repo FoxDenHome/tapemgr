@@ -8,7 +8,7 @@ from typing import Any
 class Drive:
     mountpoint: str | None
     ltfs_process: Popen[bytes] | None
-    mounter: Any
+    mounter: object
 
     def __init__(self, dev: str, key_file: str):
         super().__init__()

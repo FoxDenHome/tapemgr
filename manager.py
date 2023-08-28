@@ -193,6 +193,10 @@ class Manager:
         while self.in_backup:
             sleep(0.1)
 
+        try:
+            self.refresh_current_tape(True)
+        except:
+            pass
         self.drive.unmount()
         self.changer.unload_current()
 
