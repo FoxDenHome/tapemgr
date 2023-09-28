@@ -13,8 +13,6 @@ class FileInfo:
     mtime: float
 
     def is_better_than(self, other: 'FileInfo'):
-        if self.mtime == other.mtime:
-            return self.size > other.size
         return self.mtime > other.mtime
 
 class Tape:

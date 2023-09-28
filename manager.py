@@ -170,6 +170,7 @@ class Manager:
 
             logged_check_call(['mkdir', '-p', '%s%s' % (self.mountpoint, dir)])
             logged_call(['age', '-o', tape_name] + self.age_recipient_args + [name])
+            logged_call(['touch', '-r', name, tape_name])
 
             fstat_tape = lstat(tape_name)
             self.current_tape.files[name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
