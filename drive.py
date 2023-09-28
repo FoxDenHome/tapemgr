@@ -3,14 +3,14 @@ from os.path import ismount, basename
 from time import sleep
 from os import readlink
 from util import logged_check_call
-from typing import Any
+from typing import Any, Optional
 
 class Drive:
     mountpoint: str | None
     ltfs_process: Popen[bytes] | None
     mounter: object
 
-    def __init__(self, dev: str, key_file: str):
+    def __init__(self, dev: str, key_file: Optional[str] = None):
         super().__init__()
         self.dev = dev
         self.key_file = key_file
@@ -19,7 +19,10 @@ class Drive:
         self.mounter = None
 
     def set_encryption(self, on: bool):
-        if (not on) or (not self.key_file):
+        if not self.key_file:
+            return
+
+        if not on:
             logged_check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
             return
         logged_check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', self.key_file, '-a', '1', '--ckod'])

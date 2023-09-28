@@ -19,7 +19,7 @@ class ArgParseResult:
     tape_dir: str
     tape_suffix: str
     device: str
-    tape_key: str
+    tape_age_recipient: list[str]
     changer: str
     changer_drive_index: int
     include_hidden: bool
@@ -37,7 +37,7 @@ _ = parser.add_argument('--tape-dir', dest='tape_dir', type=str, default=path.jo
 _ = parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='P', help='Prefix to add to tape label and barcode')
 _ = parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
 _ = parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
-_ = parser.add_argument('--tape-key', dest='tape_key', type=str, default='/mnt/keydisk/tape.key', help='Tape key file for encryption, blank to disable')
+_ = parser.add_argument('--tape-age-recipient', dest='tape_age_recipient', nargs='+', type=str, help='Tape recipient for encryption')
 _ = parser.add_argument('--include-hidden', dest='include_hidden', action='store_true', help='Include hidden files in backup (default: false)')
 
 args = cast(ArgParseResult, parser.parse_args())
@@ -47,7 +47,7 @@ if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
 
 action = args.action[0]
 
-manager = Manager(Drive(args.device, args.tape_key), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir))
+manager = Manager(Drive(args.device), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir), args.tape_age_recipient)
 manager.set_barcode(args.tape_prefix, args.tape_suffix, args.tape_type)
 manager.mountpoint = args.mount
 manager.include_hidden = args.include_hidden
