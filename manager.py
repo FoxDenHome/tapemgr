@@ -39,10 +39,11 @@ class Manager:
         self.storage = storage
     
         self.age_recipient_args = []
-        for recipient in age_recipients:
-            self.age_recipient_args.append("-r")
-            self.age_recipient_args.append(recipient)
-    
+        if age_recipients:
+            for recipient in age_recipients:
+                self.age_recipient_args.append("-r")
+                self.age_recipient_args.append(recipient)
+        
         self.set_barcode("P", "S", "L6")
 
     def set_barcode(self, prefix: str, suffix: str, type: str) -> None:
