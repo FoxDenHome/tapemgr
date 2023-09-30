@@ -3,29 +3,19 @@ from os.path import ismount, basename
 from time import sleep
 from os import readlink
 from util import logged_check_call
-from typing import Any, Optional
+from typing import Any
 
 class Drive:
     mountpoint: str | None
     ltfs_process: Popen[bytes] | None
     mounter: object
 
-    def __init__(self, dev: str, key_file: Optional[str] = None):
+    def __init__(self, dev: str):
         super().__init__()
         self.dev = dev
-        self.key_file = key_file
         self.mountpoint = None
         self.ltfs_process = None
         self.mounter = None
-
-    def set_encryption(self, on: bool):
-        if not self.key_file:
-            return
-
-        if not on:
-            logged_check_call(['stenc', '-f', self.dev, '-e', 'off', '-a', '1', '--ckod'])
-            return
-        logged_check_call(['stenc', '-f', self.dev, '-e', 'on', '-k', self.key_file, '-a', '1', '--ckod'])
 
     def load(self):
         self.unmount()
@@ -34,7 +24,6 @@ class Drive:
     def format(self, label: str, serial: str):
         self.unmount()
         self.load()
-        self.set_encryption(True)
         logged_check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
 
     def make_sg(self):
@@ -51,7 +40,6 @@ class Drive:
             return False
         self.unmount()
         self.load()
-        self.set_encryption(True)
         self.mountpoint = mountpoint
         self.mounter = source
         self.ltfs_process = Popen(['ltfs', '-o', 'devname=%s' % self.make_sg(), '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
