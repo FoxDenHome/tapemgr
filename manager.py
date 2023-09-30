@@ -30,19 +30,15 @@ class Manager:
     current_tape: Optional[Tape] = None
 
     in_backup: int = 0
-    age_recipient_args: list[str]
+    age_recipient_file: str
 
-    def __init__(self, drive: Drive, changer: Changer, storage: Storage, age_recipients: list[str]) -> None:
+    def __init__(self, drive: Drive, changer: Changer, storage: Storage, age_recipient_file: str) -> None:
         super().__init__()
         self.drive = drive
         self.changer = changer
         self.storage = storage
     
-        self.age_recipient_args = []
-        if age_recipients:
-            for recipient in age_recipients:
-                self.age_recipient_args.append("-r")
-                self.age_recipient_args.append(recipient)
+        self.age_recipient_file = age_recipient_file
         
         self.set_barcode("P", "S", "L6")
 
@@ -170,7 +166,7 @@ class Manager:
             tape_name = '%s%s' % (self.mountpoint, name)
 
             logged_check_call(['mkdir', '-p', '%s%s' % (self.mountpoint, dir)])
-            logged_call(['age', '-o', tape_name] + self.age_recipient_args + [name])
+            logged_call(['age', '-e', '-o', tape_name, '-R', self.age_recipient_file, name])
             logged_call(['touch', '-r', name, tape_name])
 
             fstat_tape = lstat(tape_name)
