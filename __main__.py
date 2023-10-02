@@ -19,7 +19,7 @@ class ArgParseResult:
     tape_dir: str
     tape_suffix: str
     device: str
-    tape_age_recipients: str
+    age_recipients: str
     changer: str
     changer_drive_index: int
     include_hidden: bool
@@ -47,7 +47,7 @@ if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
 
 action = args.action[0]
 
-manager = Manager(Drive(args.device), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir), args.tape_age_recipients)
+manager = Manager(Drive(args.device), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir), args.age_recipients)
 manager.set_barcode(args.tape_prefix, args.tape_suffix, args.tape_type)
 manager.mountpoint = args.mount
 manager.include_hidden = args.include_hidden
