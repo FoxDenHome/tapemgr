@@ -24,8 +24,8 @@ class SCSIElement:
         if self.type_code != 0x04:
             raise ValueError("This is not a data transfer element")
         
-        id_len = self.data[59]
-        return self.data[60:60+id_len]
+        id_len = self.data[51]
+        return self.data[52:52+id_len]
 
 
 def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_code: int, start: int, count: int, dont_move: bool, device_id: bool):
