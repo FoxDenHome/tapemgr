@@ -20,7 +20,6 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
         start >> 8, start & 0xFF,
         count >> 8, count & 0xFF,
         bool_to_bit(dont_move, 1) | bool_to_bit(device_id, 0),
-        0x00,
         (rlen >> 16),
         (rlen >> 8) & 0xFF,
         rlen & 0xFF,
