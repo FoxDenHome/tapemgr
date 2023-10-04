@@ -51,7 +51,7 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
     pos = 8
     while pos < report_length + 8:
         element_len = (res[pos+2] << 8) | res[pos+3]
-        descriptor_len = (res[pos+5] << 16) | (res[pos+6] << 8) | (res[pos+7])]
+        descriptor_len = (res[pos+5] << 16) | (res[pos+6] << 8) | (res[pos+7])
 
         element_type_code = res[pos]
         element_flags = res[pos+1]
