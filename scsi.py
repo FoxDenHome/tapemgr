@@ -60,6 +60,6 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
             flags=res[pos+1],
             data=res[pos+8:pos+8+data_len]
         ))
-        pos += 8 + data_len
+        pos += 9 + data_len
 
     return elements
