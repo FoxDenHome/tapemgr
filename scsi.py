@@ -36,6 +36,8 @@ class SCSIElement:
         id_len = self.data[base_pos]
         return self.data[base_pos+1:base_pos+1+id_len].decode("utf-8")
 
+    def compute_properties(self) -> None:
+        self.index = (self.data[0] << 8) | self.data[1]
 
 def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_code: int, start: int, count: int, dont_move: bool, device_id: bool):
     rlen = 1000
@@ -69,12 +71,15 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
 
         sub_pos = 0
         while sub_pos < descriptor_len:
-            elements.append(SCSIElement(
+            new_element = SCSIElement(
                 index=len(elements) + first_element,
                 type_code=element_type_code,
                 flags=element_flags,
                 data=res[pos+sub_pos:pos+sub_pos+element_len]
-            ))
+            )
+            new_element.compute_properties()
+            elements.append(new_element)
+
             sub_pos += element_len
 
         pos += descriptor_len
