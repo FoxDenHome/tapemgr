@@ -20,12 +20,21 @@ class SCSIElement:
     flags: int
     data: bytes
 
-    def get_data_transfer_element_identifier(self):
+    def has_pvol_tag(self) -> bool:
+        return (self.flags & 0b10000000) != 0
+
+    def has_avol_tag(self) -> bool:
+        return (self.flags & 0b01000000) != 0
+
+    def get_data_transfer_element_identifier(self) -> bytes:
         if self.type_code != 0x04:
             raise ValueError("This is not a data transfer element")
         
-        id_len = self.data[51]
-        return self.data[52:52+id_len]
+        base_pos = 15
+        if self.has_pvol_tag():
+            base_pos += 36
+        id_len = self.data[base_pos]
+        return self.data[base_pos+1:base_pos+1+id_len]
 
 
 def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_code: int, start: int, count: int, dont_move: bool, device_id: bool):
