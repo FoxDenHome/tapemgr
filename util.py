@@ -9,9 +9,13 @@ def logged_call(args: list[str]):
     print('Running call', args)
     _ = call(args)
 
-def logged_check_output(args: list[str], encoding: str | None = 'utf-8') -> str:
+def logged_check_output(args: list[str]) -> str:
     print('Running check_output', args)
-    return check_output(args, encoding=encoding)
+    return check_output(args, encoding='utf-8')
+
+def logged_check_output_binary(args: list[str]) -> bytes:
+    print('Running check_output binary', args)
+    return check_output(args)
 
 def format_size(size: float):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
