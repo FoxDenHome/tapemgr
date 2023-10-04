@@ -10,7 +10,7 @@ def logged_call(args: list[str]):
     _ = call(args)
 
 def logged_check_output(args: list[str]) -> str:
-    print('Running check_output', args)
+    print('Running check_output text', args)
     return check_output(args, encoding='utf-8')
 
 def logged_check_output_binary(args: list[str]) -> bytes:
