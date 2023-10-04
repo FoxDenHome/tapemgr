@@ -26,7 +26,7 @@ class SCSIElement:
     def has_avol_tag(self) -> bool:
         return (self.flags & 0b01000000) != 0
 
-    def get_data_transfer_element_identifier(self) -> str:
+    def get_dte_identifier(self) -> str:
         if self.type_code != 0x04:
             raise ValueError("This is not a data transfer element")
         
