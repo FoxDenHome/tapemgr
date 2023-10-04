@@ -29,7 +29,7 @@ class ArgParseResult:
 parser = ArgumentParser(description='Tape manager')
 _ = parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
 _ = parser.add_argument('files', metavar='files', type=str, nargs='*', help='Files to store (for store action)')
-_ = parser.add_argument('--device', dest='device', type=str, default='/dev/nst0')
+_ = parser.add_argument('--device', dest='device', type=str, default='AUTO')
 _ = parser.add_argument('--changer', dest='changer', type=str, default='/dev/sch0')
 _ = parser.add_argument('--changer-drive-index', dest='changer_drive_index', type=int, default=0)
 _ = parser.add_argument('--mount', dest='mount', type=str, default='/mnt/tape')
@@ -46,6 +46,11 @@ if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
     raise ValueError('Tape type must be L#')
 
 action = args.action[0]
+
+if args.device == 'AUTO':
+    from scsi import find_dte_path_by_index
+    args.device = find_dte_path_by_index(changer_device=args.changer, index=args.changer_drive_index)
+    print(f'Successfully found tape drive node {args.device}')
 
 manager = Manager(Drive(args.device), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir), args.age_recipients)
 manager.set_barcode(args.tape_prefix, args.tape_suffix, args.tape_type)

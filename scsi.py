@@ -3,9 +3,9 @@ from typing import Sequence
 from util import logged_check_output_binary
 
 def scsi_raw(device: str, rlen: int, data: Sequence[int]):
-    cmd = ["sg_raw", "-b", "-R", "-r", str(rlen), device]
+    cmd = ['sg_raw', '-b', '-R', '-r', str(rlen), device]
     for d in data:
-        cmd.append("0x%02X" % d)
+        cmd.append('0x%02X' % d)
     return logged_check_output_binary(cmd)
 
 def bool_to_bit(val: bool, bit: int) -> int:
@@ -28,13 +28,13 @@ class SCSIElement:
 
     def get_dte_identifier(self) -> str:
         if self.type_code != 0x04:
-            raise ValueError("This is not a data transfer element")
+            raise ValueError('This is not a data transfer element')
         
         base_pos = 15
         if self.has_pvol_tag():
             base_pos += 36
         id_len = self.data[base_pos]
-        return self.data[base_pos+1:base_pos+1+id_len].decode("utf-8")
+        return self.data[base_pos+1:base_pos+1+id_len].decode('utf-8')
     
     def get_dte_vendor(self) -> str:
         return self.get_dte_identifier()[:8].strip()
@@ -96,3 +96,14 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
         pos += descriptor_len
 
     return elements
+
+def find_dte_path_by_index(changer_device: str, index: int):
+    elements = scsi_read_element_status(device=changer_device, lun=0, vol_tag=False, element_type_code=0x04, start=0x00, count=0xFF, dont_move=True, device_id=True)
+    found_element = None
+    for element in elements:
+        if element.index == index:
+            found_element = element
+            break
+    if not found_element:
+        raise ValueError('Could not find tape drive device node automatically')
+    return f'/dev/tape/by-id/scsi-{found_element.get_dte_serial()}-nst'
