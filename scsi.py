@@ -35,6 +35,15 @@ class SCSIElement:
             base_pos += 36
         id_len = self.data[base_pos]
         return self.data[base_pos+1:base_pos+1+id_len].decode("utf-8")
+    
+    def get_dte_vendor(self) -> str:
+        return self.get_dte_identifier()[:8].strip()
+
+    def get_dte_model(self) -> str:
+        return self.get_dte_identifier()[8:24].strip()
+
+    def get_dte_serial(self) -> str:
+        return self.get_dte_identifier()[24:].strip()
 
     def compute_properties(self) -> None:
         self.index = (self.data[0] << 8) | self.data[1]
