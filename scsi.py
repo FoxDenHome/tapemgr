@@ -55,6 +55,9 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
 
         element_type_code = res[pos]
         element_flags = res[pos+1]
+
+        pos += 8
+
         sub_pos = 0
         while sub_pos < descriptor_len:
             elements.append(SCSIElement(
@@ -65,6 +68,6 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
             ))
             sub_pos += element_len
 
-        pos += 8 + descriptor_len
+        pos += descriptor_len
 
     return elements
