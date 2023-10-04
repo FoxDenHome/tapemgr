@@ -50,6 +50,7 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
     elements: list[SCSIElement] = []
     pos = 8
     for index in range(element_count):
+        print(index, res[pos:])
         data_len = (res[pos+2] << 8) | res[pos+3]
 
         #descriptor_available = (res[pos+5] << 16) | (res[pos+6] << 8) | (res[pos+7])
@@ -60,6 +61,6 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
             flags=res[pos+1],
             data=res[pos+8:pos+8+data_len]
         ))
-        pos += 9 + data_len
+        pos += 8 + data_len
 
     return elements
