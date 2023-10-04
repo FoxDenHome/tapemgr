@@ -38,6 +38,8 @@ class SCSIElement:
 
     def compute_properties(self) -> None:
         self.index = (self.data[0] << 8) | self.data[1]
+        if self.type_code == 0x04: # Drive / Data Transfer Element start at 0, actually
+            self.index -= 1
 
 def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_code: int, start: int, count: int, dont_move: bool, device_id: bool):
     rlen = 1000
