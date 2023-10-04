@@ -2,7 +2,7 @@ from typing import Sequence
 from util import logged_check_output
 
 def scsi_raw(device: str, rlen: int, data: Sequence[int]):
-    cmd = ["sg_raw", "-R", "-r", str(rlen), device]
+    cmd = ["sg_raw", "-b", "-R", "-r", str(rlen), device]
     for d in data:
         cmd.append("0x%02X" % d)
     return logged_check_output(cmd, encoding=None)
