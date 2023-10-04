@@ -9,7 +9,7 @@ def logged_call(args: list[str]):
     print('Running call', args)
     _ = call(args)
 
-def logged_check_output(args: list[str], encoding: str = 'utf-8') -> str:
+def logged_check_output(args: list[str], encoding: str | None = 'utf-8') -> str:
     print('Running check_output', args)
     return check_output(args, encoding=encoding)
 

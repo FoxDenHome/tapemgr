@@ -5,7 +5,7 @@ def scsi_raw(device: str, rlen: int, data: Sequence[int]):
     cmd = ["sg_raw", "-R", "-r", str(rlen), device]
     for d in data:
         cmd.append("0x%02X" % d)
-    return logged_check_output(cmd, encoding='bytes')
+    return logged_check_output(cmd, encoding=None)
 
 def bool_to_bit(val: bool, bit: int) -> int:
     if val:
@@ -24,7 +24,8 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
         (rlen >> 16),
         (rlen >> 8) & 0xFF,
         rlen & 0xFF,
-        0x00
+        0x00,
+        0x00,
     ])
 
     print(res)
