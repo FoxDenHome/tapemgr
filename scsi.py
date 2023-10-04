@@ -51,12 +51,15 @@ def scsi_read_element_status(device: str, lun: int, vol_tag: bool, element_type_
     pos = 8
     for index in range(element_count):
         data_len = (res[pos+2] << 8) | res[pos+3]
+
+        #descriptor_available = (res[pos+5] << 16) | (res[pos+6] << 8) | (res[pos+7])
+
         elements.append(SCSIElement(
             index=index + first_element,
             type_code=res[pos],
             flags=res[pos+1],
-            data=res[pos+4:pos+4+data_len]
+            data=res[pos+8:pos+8+data_len]
         ))
-        pos += 4 + data_len
+        pos += 8 + data_len
 
     return elements
