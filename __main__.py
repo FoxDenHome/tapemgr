@@ -20,6 +20,7 @@ class ArgParseResult:
     tape_suffix: str
     device: str
     age_recipients: str
+    filename_key: str
     changer: str
     changer_drive_index: int
     include_hidden: bool
@@ -38,6 +39,7 @@ _ = parser.add_argument('--tape-prefix', dest='tape_prefix', type=str, default='
 _ = parser.add_argument('--tape-suffix', dest='tape_suffix', type=str, default='S', help='Suffix to add to tape label and barcode')
 _ = parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6', help='Tape type (L6 for LTO-6, L7 for LTO-7 etc)')
 _ = parser.add_argument('--age-recipients', dest='age_recipients', type=str, default='/mnt/keydisk/tape-age.pub', help='Age recipients file for encryption')
+_ = parser.add_argument('--filename-key', dest='filename_key', type=str, default='/mnt/keydisk/tape-filename.key', help='Key for filename encryption')
 _ = parser.add_argument('--include-hidden', dest='include_hidden', action='store_true', help='Include hidden files in backup (default: false)')
 
 args = cast(ArgParseResult, parser.parse_args())
@@ -52,7 +54,7 @@ if args.device == 'AUTO':
     args.device = find_dte_path_by_index(changer_device=args.changer, index=args.changer_drive_index)
     print(f'Successfully found tape drive node {args.device}')
 
-manager = Manager(Drive(args.device), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir), args.age_recipients)
+manager = Manager(Drive(args.device), Changer(args.changer, args.changer_drive_index), Storage(args.tape_dir), args.age_recipients, args.filename_key)
 manager.set_barcode(args.tape_prefix, args.tape_suffix, args.tape_type)
 manager.mountpoint = args.mount
 manager.include_hidden = args.include_hidden
@@ -89,11 +91,11 @@ elif action == 'index':
 elif action == 'list':
     files = manager.list_all_best()
     for name, info_tuple in files.items():
-        info, tape = info_tuple
-        print('[%s] Name "%s", size %s, mtime %s' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime)))
+        encrypted_name, info, tape = info_tuple
+        print('[%s] Name "%s" (encrypted "%s"), size %s, mtime %s' % (tape.barcode, name, encrypted_name, format_size(info.size), format_mtime(info.mtime)))
 elif action == 'find':
-    best_info, best_tape = manager.find(args.files[0])
-    print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(best_info.size), format_mtime(best_info.mtime)))
+    encrypted_name, best_info, best_tape = manager.find(args.files[0])
+    print('Best copy of file seems to be on "%s" (encrypted "%s"), size %s, mtime %s' % (best_tape.barcode, encrypted_name, format_size(best_info.size), format_mtime(best_info.mtime)))
 elif action == 'mount':
     manager.mount(args.files[0])
 elif action == 'statistics':

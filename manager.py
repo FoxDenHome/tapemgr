@@ -9,6 +9,7 @@ from util import logged_call, logged_check_call
 from stat import S_ISDIR, S_ISREG
 from time import sleep
 from util import format_size, format_mtime
+from name_enc import encrypt_filename, decrypt_filename
 
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 TAPE_SIZE_NEW_SPARE = 2 * TAPE_SIZE_SPARE
@@ -32,14 +33,16 @@ class Manager:
     in_backup: int = 0
     age_recipient_file: str
 
-    def __init__(self, drive: Drive, changer: Changer, storage: Storage, age_recipient_file: str) -> None:
+    def __init__(self, drive: Drive, changer: Changer, storage: Storage, age_recipient_file: str, filename_key_file: str) -> None:
         super().__init__()
         self.drive = drive
         self.changer = changer
         self.storage = storage
     
         self.age_recipient_file = age_recipient_file
-        
+        with open(filename_key_file, 'rb') as f:
+            self.filename_key = f.read()
+
         self.set_barcode("P", "S", "L6")
 
     def set_barcode(self, prefix: str, suffix: str, type: str) -> None:
@@ -133,10 +136,12 @@ class Manager:
             name = abspath(file)
             dir = dirname(name)
 
+            encrypted_name = encrypt_filename(name, self.filename_key)
+
             finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
             for tape in self.storage.tapes.values():
-                if name in tape.files and not finfo.is_better_than(tape.files[name]):
+                if encrypted_name in tape.files and not finfo.is_better_than(tape.files[encrypted_name]):
                     print('[SKIP] %s' % name)
                     return
 
@@ -163,14 +168,14 @@ class Manager:
                 _ = self.drive.mount(self.current_tape, self.mountpoint)
                 self.refresh_current_tape()
 
-            tape_name = '%s%s' % (self.mountpoint, name)
+            tape_name = '%s%s' % (self.mountpoint, encrypted_name)
 
             logged_check_call(['mkdir', '-p', '%s%s' % (self.mountpoint, dir)])
             logged_call(['age', '-e', '-o', tape_name, '-R', self.age_recipient_file, name])
             logged_call(['touch', '-r', name, tape_name])
 
             fstat_tape = lstat(tape_name)
-            self.current_tape.files[name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
+            self.current_tape.files[encrypted_name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
 
             self.refresh_current_tape()
         finally:
@@ -214,12 +219,14 @@ class Manager:
         else:
             raise ValueError('Do not recognize this tape!')
 
-    def find(self, filename: str) -> tuple[FileInfo, Tape]:
+    def find(self, name: str) -> tuple[str, FileInfo, Tape]:
+        encrypted_name = encrypt_filename(name, self.filename_key)
+    
         best_info: FileInfo | None = None
         best_tape: Tape | None = None
         for tape in self.storage.tapes.values():
             for name, info in tape.files.items():
-                if name != filename:
+                if name != encrypted_name:
                     continue
                 print('Found copy of file on "%s", size %s, mtime %s' % (tape.barcode, format_size(info.size), format_mtime(info.mtime)))
                 if best_info is not None and best_info.is_better_than(info):
@@ -227,17 +234,18 @@ class Manager:
                 best_info = info
                 best_tape = tape
         if best_tape is not None and best_info is not None:
-            return best_info, best_tape
+            return encrypted_name, best_info, best_tape
         else:
             raise ValueError('Could not find file')
 
     def list_all_best(self):
-        files: dict[str, tuple[FileInfo, Tape]] = {}
+        files: dict[str, tuple[str, FileInfo, Tape]] = {}
         for tape in self.storage.tapes.values():
-            for name, info in tape.files.items():
-                if name in files and not info.is_better_than(files[name][0]):
+            for encrypted_name, info in tape.files.items():
+                name = decrypt_filename(encrypted_name, self.filename_key)
+                if name in files and not info.is_better_than(files[name][1]):
                     continue
-                files[name] = (info, tape)
+                files[name] = (encrypted_name, info, tape)
         return files
 
     def index_tape(self, barcode: str) -> None:
