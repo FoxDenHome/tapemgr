@@ -1,11 +1,18 @@
 from dataclasses import dataclass
 from typing import Sequence
 from util import logged_check_output_binary
+from time import sleep
 
-def scsi_raw(device: str, rlen: int, data: Sequence[int]):
+def scsi_raw(device: str, rlen: int, data: Sequence[int], retries: int = 3):
     cmd = ['sg_raw', '-b', '-R', '-r', str(rlen), device]
     for d in data:
         cmd.append('0x%02X' % d)
+
+    for _ in range(retries - 1):
+        try:
+            return logged_check_output_binary(cmd)
+        except:
+            sleep(5)
     return logged_check_output_binary(cmd)
 
 def bool_to_bit(val: bool, bit: int) -> int:
