@@ -1,5 +1,6 @@
 from subprocess import call, check_call, check_output
 from datetime import datetime
+from os import readlink
 
 def logged_check_call(args: list[str]):
     print('Running check_call', args)
@@ -27,3 +28,9 @@ def format_size(size: float):
 def format_mtime(mtime: float):
     time = datetime.fromtimestamp(mtime)
     return time.strftime('%Y-%m-%d %H:%M:%S')
+
+def resolve_symlink(path: str) -> str:
+   try:
+        return resolve_symlink(readlink(path))
+   except OSError: # if the last is not symbolic file will throw OSError
+        return path

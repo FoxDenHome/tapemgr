@@ -2,7 +2,7 @@ from subprocess import Popen
 from os.path import ismount, basename
 from time import sleep
 from os import readlink
-from util import logged_check_call
+from util import logged_check_call, resolve_symlink
 from typing import Any
 
 class Drive:
@@ -12,7 +12,7 @@ class Drive:
 
     def __init__(self, dev: str):
         super().__init__()
-        self.dev = dev
+        self.dev = resolve_symlink(dev)
         self.mountpoint = None
         self.ltfs_process = None
         self.mounter = None

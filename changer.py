@@ -1,4 +1,4 @@
-from util import logged_check_call, logged_check_output
+from util import logged_check_call, logged_check_output, resolve_symlink
 from dataclasses import dataclass
 from typing import Literal, Optional
 
@@ -15,7 +15,7 @@ IO_BAY_ATTRIBUTE = 'IMPORT/EXPORT'
 class Changer:
     def __init__(self, dev: str, drive_index: int):
         super().__init__()
-        self.dev = dev
+        self.dev = resolve_symlink(dev)
         self.drive_index = drive_index
 
     def eject(self) -> None:
