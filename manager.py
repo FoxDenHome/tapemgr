@@ -171,7 +171,7 @@ class Manager:
                 encrypted_name = '/' + encrypted_name
             tape_name = '%s%s' % (self.mountpoint, encrypted_name)
 
-            logged_check_call(['mkdir', '-p', '%s%s' % (self.mountpoint, dirname(tape_name))])
+            logged_check_call(['mkdir', '-p', dirname(tape_name)])
             logged_call(['age', '-e', '-o', tape_name, '-R', self.age_recipient_file, name])
             logged_call(['touch', '-r', name, tape_name])
 
