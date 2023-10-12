@@ -168,7 +168,7 @@ class Manager:
                 _ = self.drive.mount(self.current_tape, self.mountpoint)
                 self.refresh_current_tape()
 
-            tape_name = '%s%s' % (self.mountpoint, encrypted_name)
+            tape_name = '%s/%s' % (self.mountpoint, encrypted_name)
 
             logged_check_call(['mkdir', '-p', '%s%s' % (self.mountpoint, dir)])
             logged_call(['age', '-e', '-o', tape_name, '-R', self.age_recipient_file, name])
