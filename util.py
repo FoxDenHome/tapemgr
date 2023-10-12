@@ -31,8 +31,9 @@ def format_mtime(mtime: float):
     return time.strftime('%Y-%m-%d %H:%M:%S')
 
 def resolve_symlink(path: str) -> str:
+   path = realpath(path)
    try:
         resolved = readlink(path)
         return resolve_symlink(path_join(dirname(path), resolved))
    except OSError: # if the last is not symbolic file will throw OSError
-        return realpath(path)
+        return path
