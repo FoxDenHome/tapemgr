@@ -1,20 +1,22 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from Crypto.Cipher import AES
-from typing import Any
+from Crypto.Cipher import _mode_cbc
+
+_IV = b'\x00' * 16
 
 class NameCryptor:
     def __init__(self, key: bytes):
         super().__init__()
         self.key = key
 
-    def get_cipher(self) -> Any:
-        return AES.new(self.key, AES.MODE_CBC, iv=b'\x00' * 16)
+    def get_cipher(self) -> _mode_cbc.CbcMode:
+        return AES.new(self.key, AES.MODE_CBC, iv=_IV) # type: ignore
 
     def encrypt(self, name: str) -> str:
         cipher = self.get_cipher()
         return '/'.join([self.encrypt_one(part, cipher) for part in name.split('/')])
 
-    def encrypt_one(self, name: str, cipher: Any) -> str:
+    def encrypt_one(self, name: str, cipher: _mode_cbc.CbcMode) -> str:
         if not name:
             return ''
 
@@ -28,7 +30,7 @@ class NameCryptor:
         cipher = self.get_cipher()
         return '/'.join([self.decrypt_one(part, cipher) for part in name.split('/')])
 
-    def decrypt_one(self, name: str, cipher: Any) -> str:
+    def decrypt_one(self, name: str, cipher: _mode_cbc.CbcMode) -> str:
         if not name:
             return ''
 
