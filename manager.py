@@ -9,7 +9,7 @@ from util import logged_call, logged_check_call
 from stat import S_ISDIR, S_ISREG
 from time import sleep
 from util import format_size, format_mtime
-from name_enc import encrypt_filename, decrypt_filename
+from name_enc import NameCryptor
 
 TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 TAPE_SIZE_NEW_SPARE = 2 * TAPE_SIZE_SPARE
@@ -41,7 +41,7 @@ class Manager:
     
         self.age_recipient_file = age_recipient_file
         with open(filename_key_file, 'rb') as f:
-            self.filename_key = f.read()
+            self.name_crypto = NameCryptor(f.read())
 
         self.set_barcode("P", "S", "L6")
 
@@ -136,7 +136,7 @@ class Manager:
             name = abspath(file)
             dir = dirname(name)
 
-            encrypted_name = encrypt_filename(name, self.filename_key)
+            encrypted_name = self.name_crypto.encrypt(name)
 
             finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
@@ -220,7 +220,7 @@ class Manager:
             raise ValueError('Do not recognize this tape!')
 
     def find(self, name: str) -> tuple[str, FileInfo, Tape]:
-        encrypted_name = encrypt_filename(name, self.filename_key)
+        encrypted_name = self.name_crypto.encrypt(name)
     
         best_info: FileInfo | None = None
         best_tape: Tape | None = None
@@ -242,7 +242,7 @@ class Manager:
         files: dict[str, tuple[str, FileInfo, Tape]] = {}
         for tape in self.storage.tapes.values():
             for encrypted_name, info in tape.files.items():
-                name = decrypt_filename(encrypted_name, self.filename_key)
+                name = self.name_crypto.decrypt(encrypted_name)
                 if name in files and not info.is_better_than(files[name][1]):
                     continue
                 files[name] = (encrypted_name, info, tape)
