@@ -12,7 +12,7 @@ class NameCryptor:
 
     def encrypt(self, name: str) -> str:
         cipher = self.get_cipher()
-        return '/'.join(map(lambda name : self.encrypt_one(name, cipher), name.split('/')))
+        return '/'.join([self.encrypt_one(part, cipher) for part in name.split('/') if part])
 
     def encrypt_one(self, name: str, cipher: Any) -> str:
         name_bytes = name.encode('utf-8')
@@ -23,7 +23,7 @@ class NameCryptor:
 
     def decrypt(self, name: str) -> str:
         cipher = self.get_cipher()
-        return '/'.join(map(lambda name : self.decrypt_one(name, cipher), name.split('/')))
+        return '/'.join([self.decrypt_one(part, cipher) for part in name.split('/') if part])
 
     def decrypt_one(self, name: str, cipher: Any) -> str:
         ciphertext = cipher.decrypt(urlsafe_b64decode(name))
