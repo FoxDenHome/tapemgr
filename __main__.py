@@ -99,8 +99,8 @@ elif action == 'find':
 elif action == 'mount':
     manager.mount(args.files[0])
 elif action == 'statistics':
-    for barcode, tape in manager.storage.tapes.items():
-        print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (barcode, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
+    for _, tape in sorted(manager.storage.tapes.items()):
+        print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (tape.barcode, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
 elif action == 'export':
     manager.changer.export_to_iobay_by_barcode(args.files[0])
 elif action == 'import':

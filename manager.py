@@ -157,10 +157,10 @@ class Manager:
                 # Find new tape!
                 min_size = min_size_new
                 found_existing_tape = False
-                for barcode, tape in self.storage.tapes.items():
+                for _, tape in sorted(self.storage.tapes.items()):
                     if tape.free >= min_size:
                         found_existing_tape = True
-                        self.ask_for_tape(barcode)
+                        self.ask_for_tape(tape.barcode)
                         break
                 if not found_existing_tape:
                     self.ask_for_tape(None)
