@@ -24,10 +24,14 @@ class NameCryptor:
         name_bytes += b'\x00' * (16 - (len(name_bytes) % 16))
         ciphertext = cipher.encrypt(name_bytes)
 
-        return urlsafe_b64encode(ciphertext).decode('utf-8')
+        result = urlsafe_b64encode(ciphertext).decode('utf-8')
+        if len(result) > 250:
+            result = result[:250] + ',/,' + result[250:]
+        return result
 
     def decrypt(self, name: str) -> str:
         cipher = self.get_cipher()
+        name = name.replace(',/,', '')
         return '/'.join([self.decrypt_one(part, cipher) for part in name.split('/')])
 
     def decrypt_one(self, name: str, cipher: _mode_cbc.CbcMode) -> str:
