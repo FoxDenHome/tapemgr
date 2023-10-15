@@ -7,7 +7,7 @@ class Slot:
     attributes: set[str]
     type: Literal['storage', 'drive'] = 'storage'
     index: int = -1
-    barcode: str = ""
+    barcode: str = ''
     empty: bool = False
 
 IO_BAY_ATTRIBUTE = 'IMPORT/EXPORT'

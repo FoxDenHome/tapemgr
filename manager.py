@@ -15,11 +15,11 @@ TAPE_SIZE_SPARE = 1024 * 1024 * 1024 # 1 GB
 TAPE_SIZE_NEW_SPARE = 2 * TAPE_SIZE_SPARE
 
 class Manager:
-    mountpoint: str = "/mnt/tape"
-    tape_barcode_prefix: str = ""
-    tape_barcode_suffix: str = ""
-    tape_type: str = ""
-    tape_barcode_fmt: str = ""
+    mountpoint: str = '/mnt/tape'
+    tape_barcode_prefix: str = ''
+    tape_barcode_suffix: str = ''
+    tape_type: str = ''
+    tape_barcode_fmt: str = ''
 
     should_exit: bool = False
     include_hidden: bool = False
@@ -43,7 +43,7 @@ class Manager:
         with open(filename_key_file, 'rb') as f:
             self.name_crypto = NameCryptor(f.read())
 
-        self.set_barcode("P", "S", "L6")
+        self.set_barcode('P', 'S', 'L6')
 
     def set_barcode(self, prefix: str, suffix: str, type: str) -> None:
         self.tape_barcode_prefix = prefix
