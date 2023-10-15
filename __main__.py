@@ -93,12 +93,13 @@ elif action == 'index':
         manager.shutdown()
 elif action == 'list':
     files = manager.list_all_best()
-    for name, info_tuple in files.items():
-        encrypted_name, info, tape = info_tuple
-        print('[%s] Name "%s" (encrypted "%s"), size %s, mtime %s' % (tape.barcode, name, encrypted_name, format_size(info.size), format_mtime(info.mtime)))
+    for encrypted_name, info_tuple in files.items():
+        info, tape = info_tuple
+        name = manager.decrypt_filename(encrypted_name)
+        print('[%s] Name "%s", size %s, mtime %s' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime)))
 elif action == 'find':
-    encrypted_name, best_info, best_tape = manager.find(args.files[0])
-    print('Best copy of file seems to be on "%s" (encrypted "%s"), size %s, mtime %s' % (best_tape.barcode, encrypted_name, format_size(best_info.size), format_mtime(best_info.mtime)))
+    best_info, best_tape = manager.find(args.files[0])
+    print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(best_info.size), format_mtime(best_info.mtime)))
 elif action == 'mount':
     manager.mount(args.files[0])
 elif action == 'statistics':

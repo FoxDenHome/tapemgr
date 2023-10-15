@@ -220,7 +220,7 @@ class Manager:
         else:
             raise ValueError('Do not recognize this tape!')
 
-    def find(self, name: str) -> tuple[str, FileInfo, Tape]:
+    def find(self, name: str) -> tuple[FileInfo, Tape]:
         encrypted_name = self.name_crypto.encrypt(name)
     
         best_info: FileInfo | None = None
@@ -235,21 +235,26 @@ class Manager:
                 best_info = info
                 best_tape = tape
         if best_tape is not None and best_info is not None:
-            return encrypted_name, best_info, best_tape
+            return best_info, best_tape
         else:
             raise ValueError('Could not find file')
 
     def list_all_best(self):
-        files: dict[str, tuple[str, FileInfo, Tape]] = {}
+        files: dict[str, tuple[FileInfo, Tape]] = {}
         for tape in self.storage.tapes.values():
             for encrypted_name, info in tape.files.items():
-                name = self.name_crypto.decrypt(encrypted_name)
-                if name in files and not info.is_better_than(files[name][1]):
+                if encrypted_name in files and not info.is_better_than(files[encrypted_name][0]):
                     continue
-                files[name] = (encrypted_name, info, tape)
+                files[encrypted_name] = (info, tape)
         return files
 
     def index_tape(self, barcode: str) -> None:
         self.changer.load_by_barcode(barcode)
         self.current_tape = self.get_current_tape(create_new=True)
         self.refresh_current_tape(True)
+
+    def decrypt_filename(self, name: str) -> str:
+        return self.name_crypto.decrypt(name)
+
+    def encrypt_filename(self, name: str) -> str:
+        return self.name_crypto.encrypt(name)
