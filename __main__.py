@@ -44,12 +44,15 @@ _ = parser.add_argument('--include-hidden', dest='include_hidden', action='store
 
 args = cast(ArgParseResult, parser.parse_args())
 
+NO_TAPE_ACTIONS = {'list', 'statistics', 'find'}
+
 if len(args.tape_type) != 2 or args.tape_type[0] != 'L':
     raise ValueError('Tape type must be L#')
 
 action = args.action[0]
 
-if args.device == 'AUTO':
+# We don't need to poke the changer for actions that don't involve actually talking to the tape drive
+if args.device == 'AUTO' and action not in NO_TAPE_ACTIONS:
     from scsi import find_dte_path_by_index
     args.device = find_dte_path_by_index(changer_device=args.changer, index=args.changer_drive_index)
     print(f'Successfully found tape drive node {args.device}')
