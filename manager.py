@@ -217,6 +217,7 @@ class Manager:
             sleep(0.1)
 
         if self.all_encrypted_names:
+            print('Checking for files to tombstone...')
             all_best = self.list_all_best()
             for encrypted_name, (finfo, _) in all_best.items():
                 if encrypted_name in self.all_encrypted_names:
