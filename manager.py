@@ -286,9 +286,12 @@ class Manager:
                 files[encrypted_name] = (info, tape)
 
         if not include_tombstones:
+            to_remove: set[str] = set()
             for encrypted_name, (info, _) in files.items():
                 if info.size == 0:
-                        del files[encrypted_name]
+                    to_remove.add(encrypted_name)
+            for name in to_remove:
+                del files[name]
     
         return files
 
