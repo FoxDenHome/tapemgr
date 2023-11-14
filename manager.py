@@ -210,14 +210,15 @@ class Manager:
         finally:
             self.in_backup -= 1
 
-    def shutdown(self) -> None:
-        self.should_exit = True
-
+    def backup_tombstone(self):
         while self.in_backup:
             sleep(0.1)
 
-        if self.all_encrypted_names:
-            print('Checking for files to tombstone...')
+        if not self.all_encrypted_names:
+            raise ValueError('No files marked for backup! Emergency bail!')
+
+        self.in_backup += 1
+        try:
             all_best = self.list_all_best()
             for encrypted_name, (finfo, _) in all_best.items():
                 if encrypted_name in self.all_encrypted_names:
@@ -226,6 +227,15 @@ class Manager:
                     continue
                 name = self.decrypt_filename(encrypted_name)
                 self.backup_file(name, None)
+        finally:
+            self.in_backup -= 1
+
+
+    def shutdown(self) -> None:
+        self.should_exit = True
+
+        while self.in_backup:
+            sleep(0.1)
 
         try:
             self.refresh_current_tape(True)

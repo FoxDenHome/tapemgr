@@ -82,6 +82,8 @@ elif action == 'store':
                 manager.backup_file(name, stat)
             else:
                 raise ValueError('Cannot backup file (not regular file or directory): %s' % name)
+        print('Checking for files to tombstone...')
+        manager.backup_tombstone()
     finally:
         manager.shutdown()
 elif action == 'unload':
