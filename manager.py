@@ -31,6 +31,7 @@ class Manager:
     current_tape: Optional[Tape] = None
 
     in_backup: int = 0
+    all_encrypted_names: set[str]
     age_recipient_file: str
 
     def __init__(self, drive: Drive, changer: Changer, storage: Storage, age_recipient_file: str, filename_key_file: str) -> None:
@@ -38,6 +39,8 @@ class Manager:
         self.drive = drive
         self.changer = changer
         self.storage = storage
+
+        self.all_encrypted_names = set()
     
         self.age_recipient_file = age_recipient_file
         with open(filename_key_file, 'rb') as f:
@@ -136,6 +139,7 @@ class Manager:
             name = abspath(file)
 
             encrypted_name = self.name_crypto.encrypt(name)
+            self.all_encrypted_names.add(encrypted_name)
 
             finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
 
@@ -204,6 +208,14 @@ class Manager:
         while self.in_backup:
             sleep(0.1)
 
+        if self.all_encrypted_names:
+            all_best = self.list_all_best()
+            for encrypted_name, (finfo, tape) in all_best.items():
+                if encrypted_name in self.all_encrypted_names:
+                    continue
+                print("Need to tombstone %s: %d", encrypted_name, finfo.mtime)
+                self.storage.save(tape)
+                    
         try:
             self.refresh_current_tape(True)
         except:
