@@ -290,8 +290,8 @@ class Manager:
             for encrypted_name, (info, _) in files.items():
                 if info.size == 0:
                     to_remove.add(encrypted_name)
-            for name in to_remove:
-                del files[name]
+            for encrypted_name in to_remove:
+                del files[encrypted_name]
     
         return files
 
