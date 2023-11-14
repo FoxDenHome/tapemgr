@@ -130,7 +130,7 @@ class Manager:
         self.refresh_current_tape(True)
         print ('Formatted tape with barcode "%s"!' % barcode)
 
-    def backup_file(self, file: str, fstat: stat_result):
+    def backup_file(self, file: str, fstat: Optional[stat_result]):
         if not self.should_backup_filename(file):
             return
 
@@ -141,17 +141,22 @@ class Manager:
             encrypted_name = self.name_crypto.encrypt(name)
             self.all_encrypted_names.add(encrypted_name)
 
-            finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
+            min_size = TAPE_SIZE_SPARE
+            min_size_new = TAPE_SIZE_NEW_SPARE
 
-            for tape in self.storage.tapes.values():
-                if encrypted_name in tape.files and not finfo.is_better_than(tape.files[encrypted_name]):
-                    print('[SKIP] %s' % name)
-                    return
+            if fstat is None:
+                print('[TOMB] %s' % name)
+            else:
+                min_size += fstat.st_size
+                min_size_new += fstat.st_size
+                finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
+                for tape in self.storage.tapes.values():
+                    if encrypted_name in tape.files and not finfo.is_better_than(tape.files[encrypted_name]):
+                        print('[SKIP] %s' % name)
+                        return
 
-            print('[STOR] %s' % name)
+                print('[STOR] %s' % name)
 
-            min_size = fstat.st_size + TAPE_SIZE_SPARE
-            min_size_new = fstat.st_size + TAPE_SIZE_NEW_SPARE
 
             if self.current_tape is not None and self.current_tape.free < min_size:
                 self.refresh_current_tape()
@@ -176,8 +181,11 @@ class Manager:
             tape_name = '%s%s' % (self.mountpoint, encrypted_name)
 
             logged_check_call(['mkdir', '-p', dirname(tape_name)])
-            logged_call(['age', '-e', '-o', tape_name, '-R', self.age_recipient_file, name])
-            logged_call(['touch', '-r', name, tape_name])
+            if fstat is None:
+                open(tape_name, 'wb').close()
+            else:
+                logged_call(['age', '-e', '-o', tape_name, '-R', self.age_recipient_file, name])
+                logged_call(['touch', '-r', name, tape_name])
 
             fstat_tape = lstat(tape_name)
             self.current_tape.files[encrypted_name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
@@ -210,12 +218,14 @@ class Manager:
 
         if self.all_encrypted_names:
             all_best = self.list_all_best()
-            for encrypted_name, (finfo, tape) in all_best.items():
+            for encrypted_name, (finfo, _) in all_best.items():
                 if encrypted_name in self.all_encrypted_names:
                     continue
-                print("Need to tombstone %s: %d", encrypted_name, finfo.mtime)
-                self.storage.save(tape)
-                    
+                if finfo.size == 0:
+                    continue
+                name = self.decrypt_filename(encrypted_name)
+                self.backup_file(name, None)
+
         try:
             self.refresh_current_tape(True)
         except:
