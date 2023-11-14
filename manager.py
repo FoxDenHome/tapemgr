@@ -219,7 +219,7 @@ class Manager:
 
         self.in_backup += 1
         try:
-            all_best = self.list_all_best()
+            all_best = self._list_all_best(include_tombstones=True)
             for encrypted_name, (finfo, _) in all_best.items():
                 if encrypted_name in self.all_encrypted_names:
                     continue
@@ -267,19 +267,33 @@ class Manager:
                     continue
                 best_info = info
                 best_tape = tape
+
+        if best_info is not None and best_info.size == 0: # Tombstone
+            best_info = None
+            best_tape = None
+
         if best_tape is not None and best_info is not None:
             return best_info, best_tape
         else:
             raise ValueError('Could not find file')
 
-    def list_all_best(self):
+    def _list_all_best(self, include_tombstones: bool = False):
         files: dict[str, tuple[FileInfo, Tape]] = {}
         for tape in self.storage.tapes.values():
             for encrypted_name, info in tape.files.items():
                 if encrypted_name in files and not info.is_better_than(files[encrypted_name][0]):
                     continue
                 files[encrypted_name] = (info, tape)
+
+        if not include_tombstones:
+            for encrypted_name, (info, _) in files.items():
+                if info.size == 0:
+                        del files[encrypted_name]
+    
         return files
+
+    def list_all_best(self):
+        return self._list_all_best(include_tombstones=False)
 
     def index_tape(self, barcode: str) -> None:
         self.changer.load_by_barcode(barcode)
