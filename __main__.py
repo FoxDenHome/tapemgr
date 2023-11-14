@@ -97,8 +97,6 @@ elif action == 'list':
     files = manager.list_all_best()
     for encrypted_name, info_tuple in files.items():
         info, tape = info_tuple
-        if info.size == 0: # Tombstone
-            continue
         name = manager.decrypt_filename(encrypted_name)
         print('[%s] Name "%s", size %s, mtime %s' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime)))
 elif action == 'find':
