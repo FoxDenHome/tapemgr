@@ -10,6 +10,7 @@ from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
 from util import format_size, format_mtime
 from manager import Manager
+from glob import glob
 
 @dataclass
 class ArgParseResult:
@@ -109,14 +110,18 @@ elif action == 'copyback':
         tape_barcode = args.files[0]
         #manager.mount(tape_barcode)
         dst = args.files[1]
-        to_copy = args.files[2:]
+        to_copy = set(args.files[2:])
         all_files = manager.list_all_best()
 
         for encrypted_name, info_tuple in all_files.items():
             info, tape = info_tuple
             if tape.barcode != tape_barcode:
                 continue
+            
             name = manager.decrypt_filename(encrypted_name)
+            if (name not in to_copy) and ("*" not in to_copy):
+                continue
+
             dst_name = path.join(dst, name)
             src_name = path.join(manager.mountpoint, encrypted_name)
             print('Copying "%s" -> "%s"' % (src_name, dst_name))
