@@ -123,6 +123,11 @@ elif action == 'copyback':
             if (name not in to_copy) and ("*" not in to_copy):
                 continue
 
+            if name[0] == '/':
+                name = name[1:]
+            if encrypted_name[0] == '/':
+                encrypted_name = encrypted_name[1:]
+
             dst_name = path.join(dst, name)
             src_name = path.join(manager.mountpoint, encrypted_name)
             if exists(dst_name):
