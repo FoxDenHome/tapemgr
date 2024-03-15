@@ -108,9 +108,10 @@ elif action == 'mount':
 elif action == 'copyback':
     try:
         tape_barcode = args.files[0]
+        decryption_key = args.files[1]
         manager.mount(tape_barcode)
-        dst = args.files[1]
-        to_copy = set(args.files[2:])
+        dst = args.files[2]
+        to_copy = set(args.files[3:])
         all_files = manager.list_all_best()
 
         for encrypted_name, info_tuple in all_files.items():
@@ -129,7 +130,7 @@ elif action == 'copyback':
                 continue
             print('Copying "%s" -> "%s"' % (src_name, dst_name))
             logged_check_call(['mkdir', '-p', dirname(dst_name)])
-            logged_call(['age', '-d', '-o', dst_name, '-R', manager.age_recipient_file, src_name])
+            logged_call(['age', '-d', '-o', dst_name, '-i', decryption_key, src_name])
             logged_call(['touch', '-r', src_name, dst_name])
     finally:
         manager.shutdown()
