@@ -8,9 +8,9 @@ from stat import S_ISDIR, S_ISREG
 from storage import Storage
 from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
-from util import format_size, format_mtime
+from util import format_size, format_mtime, logged_check_call, logged_call
 from manager import Manager
-from glob import glob
+from os.path import dirname
 
 @dataclass
 class ArgParseResult:
@@ -108,7 +108,7 @@ elif action == 'mount':
 elif action == 'copyback':
     try:
         tape_barcode = args.files[0]
-        #manager.mount(tape_barcode)
+        manager.mount(tape_barcode)
         dst = args.files[1]
         to_copy = set(args.files[2:])
         all_files = manager.list_all_best()
@@ -125,6 +125,9 @@ elif action == 'copyback':
             dst_name = path.join(dst, name)
             src_name = path.join(manager.mountpoint, encrypted_name)
             print('Copying "%s" -> "%s"' % (src_name, dst_name))
+            logged_check_call(['mkdir', '-p', dirname(dst_name)])
+            logged_call(['age', '-d', '-o', dst_name, '-R', manager.age_recipient_file, src_name])
+            logged_call(['touch', '-r', src_name, dst_name])
     finally:
         manager.shutdown()
 elif action == 'statistics':
