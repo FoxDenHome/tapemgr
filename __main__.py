@@ -104,6 +104,24 @@ elif action == 'find':
     print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(best_info.size), format_mtime(best_info.mtime)))
 elif action == 'mount':
     manager.mount(args.files[0])
+elif action == 'copyback':
+    try:
+        tape_barcode = args.files[0]
+        #manager.mount(tape_barcode)
+        dst = args.files[1]
+        to_copy = args.files[2:]
+        all_files = manager.list_all_best()
+
+        for encrypted_name, info_tuple in all_files.items():
+            info, tape = info_tuple
+            if tape.barcode != tape_barcode:
+                continue
+            name = manager.decrypt_filename(encrypted_name)
+            dst_name = path.join(dst, name)
+            src_name = path.join(manager.mountpoint, encrypted_name)
+            print('Copying "%s" -> "%s"' % (src_name, dst_name))
+    finally:
+        manager.shutdown()
 elif action == 'statistics':
     for _, tape in sorted(manager.storage.tapes.items()):
         print('[%s] Free = %s / %s (%.2f%%), Files = %d' % (tape.barcode, format_size(tape.free), format_size(tape.size), (tape.free / tape.size) * 100.0, len(tape.files)))
