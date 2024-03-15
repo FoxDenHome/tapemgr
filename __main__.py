@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
 from util import format_size, format_mtime, logged_check_call, logged_call
 from manager import Manager
-from os.path import dirname
+from os.path import dirname, exists
 
 @dataclass
 class ArgParseResult:
@@ -124,6 +124,9 @@ elif action == 'copyback':
 
             dst_name = path.join(dst, name)
             src_name = path.join(manager.mountpoint, encrypted_name)
+            if exists(dst_name):
+                print('Skipping "%s" -> "%s" (already exists)' % (src_name, dst_name))
+                continue
             print('Copying "%s" -> "%s"' % (src_name, dst_name))
             logged_check_call(['mkdir', '-p', dirname(dst_name)])
             logged_call(['age', '-d', '-o', dst_name, '-R', manager.age_recipient_file, src_name])
