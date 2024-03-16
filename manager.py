@@ -152,7 +152,7 @@ class Manager:
                 finfo = FileInfo(size=fstat.st_size,mtime=fstat.st_mtime)
                 for tape in self.storage.tapes.values():
                     if encrypted_name in tape.files and not finfo.is_better_than(tape.files[encrypted_name]):
-                        print('[SKIP] %s' % name)
+                        #print('[SKIP] %s' % name)
                         return
 
                 print('[STOR] %s' % name)
