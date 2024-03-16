@@ -188,7 +188,9 @@ class Manager:
                 logged_call(['touch', '-r', name, tape_name])
 
             fstat_tape = lstat(tape_name)
-            self.current_tape.files[encrypted_name] = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
+            file_info = FileInfo(size=fstat_tape.st_size,mtime=fstat_tape.st_mtime)
+            file_info.getxattr(tape_name)
+            self.current_tape.files[encrypted_name] = file_info
 
             self.refresh_current_tape()
         finally:

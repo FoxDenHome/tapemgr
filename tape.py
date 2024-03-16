@@ -16,6 +16,10 @@ class FileInfo:
     partition: str = ''
     startblock: int = 0
 
+    def getxattr(self, name: str) -> None:
+        self.partition = cast(bytes, getxattr(name, 'user.ltfs.partition')).decode('utf-8')
+        self.startblock = int(cast(bytes, getxattr(name, 'user.ltfs.startblock')), 10)
+
     def is_better_than(self, other: 'FileInfo'):
         return self.mtime > other.mtime
 
@@ -66,6 +70,6 @@ def dir_recurse(dir: str, tape: Tape, mountpoint_len: int):
             dir_recurse(file.path, tape, mountpoint_len)
         elif S_ISREG(stat.st_mode):
             name = path.abspath(file.path)[mountpoint_len:]
-            partition = cast(bytes, getxattr(file.path, 'user.ltfs.partition')).decode('utf-8')
-            startblock = int(cast(bytes, getxattr(file.path, 'user.ltfs.startblock')), 10)
-            tape.files[name] = FileInfo(size=stat.st_size, mtime=stat.st_mtime, partition=partition, startblock=startblock)
+            file_info = FileInfo(size=stat.st_size, mtime=stat.st_mtime)
+            file_info.getxattr(file.path)
+            tape.files[name] = file_info
