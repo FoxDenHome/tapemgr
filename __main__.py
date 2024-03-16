@@ -96,7 +96,9 @@ elif action == 'unload':
     manager.shutdown()
 elif action == 'index':
     try:
-        manager.index_tape(args.files[0])
+        tape_barcode = args.files[0]
+        manager.mount(tape_barcode)
+        manager.index_tape(tape_barcode)
     finally:
         manager.shutdown()
 elif action == 'list':
