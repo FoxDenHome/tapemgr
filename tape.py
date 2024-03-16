@@ -66,6 +66,6 @@ def dir_recurse(dir: str, tape: Tape, mountpoint_len: int):
             dir_recurse(file.path, tape, mountpoint_len)
         elif S_ISREG(stat.st_mode):
             name = path.abspath(file.path)[mountpoint_len:]
-            partition = cast(str, getxattr(file.path, 'user.ltfs.partition'))
+            partition = cast(bytes, getxattr(file.path, 'user.ltfs.partition')).decode('utf-8')
             startblock = int(cast(str, getxattr(file.path, 'user.ltfs.startblock')), 10)
             tape.files[name] = FileInfo(size=stat.st_size, mtime=stat.st_mtime, partition=partition, startblock=startblock)
