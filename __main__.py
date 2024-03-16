@@ -104,7 +104,7 @@ elif action == 'list':
     for encrypted_name, info_tuple in files.items():
         info, tape = info_tuple
         name = manager.decrypt_filename(encrypted_name)
-        print('[%s] Name "%s", size %s, mtime %s' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime)))
+        print('[%s] Name "%s", size %s, mtime %s, partition %s, startblock %d' % (tape.barcode, name, format_size(info.size), format_mtime(info.mtime), info.partition, info.startblock))
 elif action == 'find':
     best_info, best_tape = manager.find(args.files[0])
     print('Best copy of file seems to be on "%s", size %s, mtime %s' % (best_tape.barcode, format_size(best_info.size), format_mtime(best_info.mtime)))
