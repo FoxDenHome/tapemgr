@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from changer import Changer
 from drive import Drive
 from util import logged_check_output, is_dry_run
+from xattr import getxattr
+from typing import cast
 
 
 
@@ -11,6 +13,8 @@ from util import logged_check_output, is_dry_run
 class FileInfo:
     size: int
     mtime: float
+    partition: str = ''
+    startblock: int = 0
 
     def is_better_than(self, other: 'FileInfo'):
         return self.mtime > other.mtime
@@ -57,9 +61,11 @@ class Tape:
 
 def dir_recurse(dir: str, tape: Tape, mountpoint_len: int):
     for file in scandir(dir):
-            stat = file.stat(follow_symlinks=False)
-            if S_ISDIR(stat.st_mode):
-                dir_recurse(file.path, tape, mountpoint_len)
-            elif S_ISREG(stat.st_mode):
-                name = path.abspath(file.path)[mountpoint_len:]
-                tape.files[name] = FileInfo(size=stat.st_size, mtime=stat.st_mtime)
+        stat = file.stat(follow_symlinks=False)
+        if S_ISDIR(stat.st_mode):
+            dir_recurse(file.path, tape, mountpoint_len)
+        elif S_ISREG(stat.st_mode):
+            name = path.abspath(file.path)[mountpoint_len:]
+            partition = cast(str, getxattr(file.path, 'user.ltfs.partition'))
+            startblock = int(cast(str, getxattr(file.path, 'user.ltfs.startblock')), 10)
+            tape.files[name] = FileInfo(size=stat.st_size, mtime=stat.st_mtime, partition=partition, startblock=startblock)
