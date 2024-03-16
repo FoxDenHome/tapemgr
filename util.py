@@ -3,6 +3,14 @@ from datetime import datetime
 from os import readlink
 from os.path import join as path_join, dirname, realpath
 
+_is_dry_run = False
+def set_dry_run() -> None:
+    global _is_dry_run
+    _is_dry_run = True
+
+def is_dry_run() -> bool:
+    return _is_dry_run
+
 def logged_check_call(args: list[str]):
     print('Running check_call', args)
     _ = check_call(args)

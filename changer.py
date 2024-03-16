@@ -1,4 +1,4 @@
-from util import logged_check_call, logged_check_output, resolve_symlink
+from util import logged_check_call, logged_check_output, resolve_symlink, is_dry_run
 from dataclasses import dataclass
 from typing import Literal, Optional
 
@@ -19,6 +19,8 @@ class Changer:
         self.drive_index = drive_index
 
     def eject(self) -> None:
+        if is_dry_run():
+            return
         logged_check_call(['mtx', '-f', self.dev, 'eject'])
 
     def read_inventory(self) -> tuple[dict[int, Slot], dict[int, Slot]]:
@@ -101,10 +103,16 @@ class Changer:
         empty_slot = self._find_first_empty(storage_inventory)
         if not empty_slot:
             raise ValueError('No empty storage slot found')
+
+        if is_dry_run():
+            return
         logged_check_call(['mtx', '-f', self.dev, 'unload', str(empty_slot.index), str(drive_slot.index)])
 
     def _load_slot(self, drive_slot: Slot, storage_slot: Slot, storage_inventory: dict[int, Slot]) -> None:
         self._unload_slot(drive_slot, storage_inventory)
+
+        if is_dry_run():
+            return
         logged_check_call(['mtx', '-f', self.dev, 'load', str(storage_slot.index), str(drive_slot.index)])
 
 
@@ -141,6 +149,8 @@ class Changer:
         if not empty_slot:
             raise ValueError('No empty storage slot found')
         
+        if is_dry_run():
+            return
         logged_check_call(['mtx', '-f', self.dev, 'transfer', str(iobay_slot.index), str(empty_slot.index)])
 
     def export_to_iobay_by_barcode(self, barcode: str) -> None:
@@ -154,4 +164,6 @@ class Changer:
         if not storage_slot:
             raise ValueError(f'No storage slot found with barcode {barcode}')
 
+        if is_dry_run():
+            return
         logged_check_call(['mtx', '-f', self.dev, 'transfer', str(storage_slot.index), str(iobay_slot.index)])

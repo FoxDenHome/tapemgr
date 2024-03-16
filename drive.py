@@ -2,7 +2,7 @@ from subprocess import Popen
 from os.path import ismount, basename
 from time import sleep
 from os import readlink
-from util import logged_check_call, resolve_symlink
+from util import logged_check_call, resolve_symlink, is_dry_run
 from typing import Any
 
 class Drive:
@@ -19,11 +19,15 @@ class Drive:
 
     def load(self):
         self.unmount()
+        if is_dry_run():
+            return
         logged_check_call(['sg_start', '--load', self.dev])
 
     def format(self, label: str, serial: str):
         self.unmount()
         self.load()
+        if is_dry_run():
+            return
         logged_check_call(['mkltfs', '--device=%s' % self.dev, '-n', label, '-s', serial, '-f'])
 
     def make_sg(self):
@@ -42,6 +46,8 @@ class Drive:
         self.load()
         self.mountpoint = mountpoint
         self.mounter = source
+        if is_dry_run():
+            return True
         self.ltfs_process = Popen(['ltfs', '-o', 'devname=%s' % self.make_sg(), '-f', '-o', 'umask=077', '-o', 'eject', '-o', 'sync_type=unmount', mountpoint])
         while self.ltfs_process.returncode is None:
             if ismount(mountpoint):
@@ -52,6 +58,12 @@ class Drive:
         return True
 
     def unmount(self) -> None:
+        if is_dry_run():
+            self.ltfs_process = None
+            self.mountpoint = None
+            self.mounter = None
+            return
+
         if self.ltfs_process is None:
             return
         if self.mountpoint is None:

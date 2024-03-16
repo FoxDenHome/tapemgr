@@ -8,7 +8,7 @@ from stat import S_ISDIR, S_ISREG
 from storage import Storage
 from argparse import ArgumentParser
 from signal import SIGINT, SIGTERM, signal
-from util import format_size, format_mtime, logged_check_call, logged_call
+from util import format_size, format_mtime, logged_check_call, logged_call, set_dry_run
 from manager import Manager
 from os.path import dirname, exists
 
@@ -27,6 +27,7 @@ class ArgParseResult:
     include_hidden: bool
     action: list[str]
     files: list[str]
+    dry_run: bool
 
 parser = ArgumentParser(description='Tape manager')
 _ = parser.add_argument('action', metavar='action', type=str, nargs=1, help='The action to perform')
@@ -42,8 +43,12 @@ _ = parser.add_argument('--tape-type', dest='tape_type', type=str, default='L6',
 _ = parser.add_argument('--age-recipients', dest='age_recipients', type=str, default='/mnt/keydisk/tape-age.pub', help='Age recipients file for encryption')
 _ = parser.add_argument('--filename-key', dest='filename_key', type=str, default='/mnt/keydisk/tape-filename.key', help='Key for filename encryption')
 _ = parser.add_argument('--include-hidden', dest='include_hidden', action='store_true', help='Include hidden files in backup (default: false)')
+_ = parser.add_argument('--dry-run', dest='dry_run', action='store_true', help='Do not make any changes to tapes')
 
 args = cast(ArgParseResult, parser.parse_args())
+
+if args.dry_run:
+    set_dry_run()
 
 NO_TAPE_ACTIONS = {'list', 'statistics', 'find'}
 

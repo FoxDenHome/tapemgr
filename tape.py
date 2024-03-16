@@ -3,7 +3,7 @@ from stat import S_ISDIR, S_ISREG
 from dataclasses import dataclass
 from changer import Changer
 from drive import Drive
-from util import logged_check_output
+from util import logged_check_output, is_dry_run
 
 
 
@@ -24,6 +24,9 @@ class Tape:
         self.free = 0
 
     def verify_in_changer(self, changer: Changer):
+        if is_dry_run():
+            return
+
         found_barcode = changer.read_barcode()
         if found_barcode != self.barcode:
             raise ValueError('Could not change to tape "%s", got "%s"!' % (self.barcode, found_barcode))
@@ -34,6 +37,11 @@ class Tape:
             did_mount = drive.mount(self, mountpoint)
         else:
             did_mount = False
+
+        if is_dry_run():
+            if did_mount:
+                drive.unmount()
+            return
 
         line = logged_check_output(['df', '-B1', mountpoint]).split('\n')[1]
         _, size, _, free, _, _ = line.split()
