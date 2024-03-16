@@ -14,11 +14,17 @@ class FileInfo:
     size: int
     mtime: float
     partition: str = ''
-    startblock: int = 0
+    startblock: int = -1
 
     def getxattr(self, name: str) -> None:
-        self.partition = cast(bytes, getxattr(name, 'user.ltfs.partition')).decode('utf-8')
-        self.startblock = int(cast(bytes, getxattr(name, 'user.ltfs.startblock')), 10)
+        try:
+            self.partition = cast(bytes, getxattr(name, 'user.ltfs.partition')).decode('utf-8')
+        except OSError:
+            self.partition = ''
+        try:
+            self.startblock = int(cast(bytes, getxattr(name, 'user.ltfs.startblock')), 10)
+        except OSError:
+            self.startblock = -1
 
     def is_better_than(self, other: 'FileInfo'):
         return self.mtime > other.mtime
