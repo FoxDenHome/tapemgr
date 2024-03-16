@@ -2,6 +2,7 @@
 from os import path, scandir
 from pickle import load, dump
 from typing import TYPE_CHECKING, Any, cast
+from util import is_dry_run
 
 if TYPE_CHECKING:
   from tape import Tape
@@ -19,6 +20,9 @@ class Storage:
         self.load_all()
 
     def save(self, tape: Tape) -> None:
+        if is_dry_run():
+            return
+
         fh = open(path.join(self.dir, tape.barcode), 'wb')
         dump(tape, fh)
         fh.close()
