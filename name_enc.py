@@ -1,6 +1,6 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from Crypto.Cipher import AES
-from Crypto.Cipher import _mode_cbc
+from Cryptodome.Cipher import AES
+from Cryptodome.Cipher import _mode_cbc
 
 _IV = b'\x00' * 16
 
