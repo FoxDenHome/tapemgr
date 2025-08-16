@@ -26,6 +26,23 @@ class FileInfo:
         except OSError:
             self.startblock = -1
 
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "size": self.size,
+            "mtime": self.mtime,
+            "partition": self.partition,
+            "startblock": self.startblock
+        }
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> 'FileInfo':
+        return FileInfo(
+            size=data["size"],
+            mtime=data["mtime"],
+            partition=data["partition"],
+            startblock=data["startblock"]
+        )
+
     def is_better_than(self, other: 'FileInfo'):
         return self.mtime > other.mtime
 
@@ -42,18 +59,18 @@ class Tape:
         self.size = 0
         self.free = 0
 
-    def as_dict(self):
+    def as_dict(self) -> dict[str, Any]:
         return {
             "barcode": self.barcode,
-            "files": self.files,
+            "files": {k: v.as_dict() for k, v in self.files.items()},
             "size": self.size,
             "free": self.free
         }
-    
+
     @staticmethod
     def from_dict(data: dict[str, Any]) -> 'Tape':
         tape = Tape(barcode=data["barcode"])
-        tape.files = data["files"]
+        tape.files = {k: FileInfo.from_dict(v) for k, v in data["files"].items()}
         tape.size = data["size"]
         tape.free = data["free"]
         return tape
