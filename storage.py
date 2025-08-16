@@ -2,7 +2,7 @@
 from os import path, scandir
 from pickle import load
 from json import dump
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from util import is_dry_run
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ class Storage:
                 continue
             try:
                 fh = open(file.path, 'rb')
-                tape = Tape.from_dict(load(fh))
+                tape = cast(Tape, load(fh))
                 tapes[tape.barcode] = tape
                 fh.close()
             except:
