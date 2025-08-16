@@ -10,7 +10,7 @@ import (
 func main() {
 	log.Printf("Hello from tapemgr!")
 
-	sch, err := scsi.NewSCSIDevice("/dev/sch0")
+	sch, err := scsi.Open("/dev/sch0")
 	if err != nil {
 		log.Fatalf("Failed to open SCSI device: %v", err)
 	}
