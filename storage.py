@@ -1,6 +1,7 @@
 # pyright: reportImportCycles=false
 from os import path, scandir
-from pickle import load, dump
+from pickle import load
+from json import dump
 from typing import TYPE_CHECKING, Any, cast
 from util import is_dry_run
 
@@ -12,7 +13,7 @@ else:
 class Storage:
     dir: str
     tapes: dict[str, Tape]
-    
+
     def __init__(self, dir: str) -> None:
         super().__init__()
         self.dir = dir
@@ -23,7 +24,7 @@ class Storage:
         if is_dry_run():
             return
 
-        fh = open(path.join(self.dir, tape.barcode), 'wb')
+        fh = open(path.join(self.dir, f"{tape.barcode}.json"), 'w')
         dump(tape, fh)
         fh.close()
         self.tapes[tape.barcode] = tape
