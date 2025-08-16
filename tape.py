@@ -39,7 +39,7 @@ class FileInfo:
     def from_dict(data: dict[str, Any]) -> 'FileInfo':
         return FileInfo(
             size=data["size"],
-            mtime=datetime.fromisoformat(data["mtime"]).astimezone(timezone.utc).timestamp(),
+            mtime=datetime.fromisoformat(data["modified_time"]).astimezone(timezone.utc).timestamp(),
             partition=data["partition"],
             startblock=data["start_block"]
         )
