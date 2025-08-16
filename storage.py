@@ -49,6 +49,6 @@ class Storage:
                 tape = Tape.from_dict(load(fh))
                 tapes[tape.barcode] = tape
                 fh.close()
-            except:
-                print('Error loading tape data "%s"' % file.name)
+            except Exception as e:
+                print('Error loading tape data "%s": %s' % (file.name, e))
         self.tapes = tapes
