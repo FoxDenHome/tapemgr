@@ -1,6 +1,8 @@
 package scsi
 
 import (
+	"errors"
+
 	"github.com/FoxDenHome/tapemgr/scsi/element"
 	"github.com/FoxDenHome/tapemgr/util"
 )
@@ -38,6 +40,11 @@ func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, c
 		pageLength := int(resp[pos+5])<<16 | int(resp[pos+6])<<8 | int(resp[pos+7])
 
 		hasPVolTag := util.FlagToBool(resp[pos+1], 7)
+		hasAVolTag := util.FlagToBool(resp[pos+1], 6)
+
+		if hasAVolTag {
+			return nil, errors.New("received Alternative Volume Tag, which is not supported")
+		}
 
 		pos += 8
 		subPos := 0
