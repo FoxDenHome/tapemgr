@@ -1,19 +1,20 @@
 package descriptor
 
-import (
-	"errors"
-)
+import "github.com/FoxDenHome/tapemgr/util"
 
 type DataTransfer struct {
 	Base
+
+	Access bool
+	Except bool
+	Full   bool
 }
 
-func parseDataTransfer(data []byte, hasVolTag bool, base *Base) (Interface, error) {
-	if len(data) < 2 {
-		return nil, errors.New("invalid data length")
-	}
-
+func parseDataTransfer(data []byte, base *Base) (Interface, error) {
 	return &DataTransfer{
-		Base: *base,
+		Base:   *base,
+		Access: util.FlagToBool(data[2], 3),
+		Except: util.FlagToBool(data[2], 2),
+		Full:   util.FlagToBool(data[2], 0),
 	}, nil
 }
