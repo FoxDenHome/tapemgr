@@ -1,8 +1,6 @@
 package scsi
 
 import (
-	"log"
-
 	"github.com/FoxDenHome/tapemgr/scsi/element"
 	"github.com/FoxDenHome/tapemgr/scsi/element/descriptor"
 	"github.com/FoxDenHome/tapemgr/util"
@@ -32,8 +30,6 @@ func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, star
 	}
 
 	var elementStatuses []descriptor.Interface
-	/// address := uint16(resp[0])<<8 | uint16(resp[1])
-	// elementCount := uint16(resp[2])<<8 | uint16(resp[3])
 	reportLength := int(resp[5])<<16 | int(resp[6])<<8 | int(resp[7])
 
 	pos := 8
@@ -43,8 +39,6 @@ func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, star
 		pageLength := int(resp[pos+5])<<16 | int(resp[pos+6])<<8 | int(resp[pos+7])
 
 		hasVolTag := util.FlagToBool(resp[pos+1], 7)
-
-		log.Printf("Array of type %d with length of %d %v", elementType, elementLength, resp[pos:pos+8])
 
 		pos += 8
 		subPos := 0
