@@ -15,6 +15,7 @@ func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, c
 	if readDeviceId {
 		perElementLen += element.DeviceIDLengthMax
 	}
+	// Expected element length + (page header * max pages [one per element type at most]) + header
 	reservedRespLen := (perElementLen * int(count)) + (8 * element.ElementTypes) + 8
 
 	resp, err := d.request([]byte{
