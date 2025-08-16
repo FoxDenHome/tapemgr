@@ -1,8 +1,7 @@
 # pyright: reportImportCycles=false
 from os import path, scandir
-from pickle import load
-from json import dump
-from typing import TYPE_CHECKING, Any, cast
+from json import dump, load
+from typing import TYPE_CHECKING, Any
 from util import is_dry_run
 
 if TYPE_CHECKING:
@@ -25,7 +24,12 @@ class Storage:
             return
 
         fh = open(path.join(self.dir, f"{tape.barcode}.json"), 'w')
-        dump(tape.as_dict(), fh)
+        dump(
+            tape.as_dict(),
+            fh,
+            indent=4,
+            sort_keys=True,
+        )
         fh.close()
         self.tapes[tape.barcode] = tape
 
@@ -41,8 +45,8 @@ class Storage:
             if file.name[0] == '.':
                 continue
             try:
-                fh = open(file.path, 'rb')
-                tape = cast(Tape, load(fh))
+                fh = open(file.path, 'r')
+                tape = Tape.from_dict(load(fh))
                 tapes[tape.barcode] = tape
                 fh.close()
             except:
