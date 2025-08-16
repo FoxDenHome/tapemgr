@@ -1,6 +1,6 @@
 package scsi
 
-func (d *SCSIDevice) IsReady() (bool, error) {
+func (d *SCSIDevice) TestUnitReady() (bool, error) {
 	resp, err := d.request([]byte{
 		TEST_UNIT_READY, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}, 6)

@@ -15,7 +15,7 @@ func main() {
 		log.Fatalf("Failed to open SCSI device: %v", err)
 	}
 
-	ready, err := sch.IsReady()
+	ready, err := sch.TestUnitReady()
 	if err != nil {
 		log.Fatalf("Failed to check if SCSI device is ready: %v", err)
 	}
