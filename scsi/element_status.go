@@ -8,7 +8,7 @@ import (
 )
 
 func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, count uint16, curData bool, readVolumeTag bool, readDeviceId bool) ([]*element.Descriptor, error) {
-	perElementLen := 64 // Some libraries return a lot of useless trailing data
+	perElementLen := 52 // Maximum plain response len observed in docs
 	if readVolumeTag {
 		perElementLen += element.VolumeTagLength
 	}
