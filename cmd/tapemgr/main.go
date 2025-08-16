@@ -22,7 +22,7 @@ func main() {
 
 	for _, elem := range status {
 		log.Printf("==================")
-		log.Printf("Address: %d", elem.Address())
-		log.Printf("Element Type: %d", elem.ElementType())
+		log.Printf("Address: %d", elem.Address)
+		log.Printf("Element Type: %d", elem.ElementType)
 	}
 }

@@ -2,7 +2,6 @@ package scsi
 
 import (
 	"github.com/FoxDenHome/tapemgr/scsi/element"
-	"github.com/FoxDenHome/tapemgr/scsi/element/descriptor"
 	"github.com/FoxDenHome/tapemgr/util"
 )
 
@@ -10,7 +9,7 @@ const (
 	READ_ELEMENT_STATUS = 0xB8
 )
 
-func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, start uint16, count uint16, curData bool, readVolumeTag bool, readDeviceId bool) ([]descriptor.Interface, error) {
+func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, start uint16, count uint16, curData bool, readVolumeTag bool, readDeviceId bool) ([]*element.Descriptor, error) {
 	respLen := 65536
 	resp := make([]byte, respLen)
 
@@ -29,7 +28,7 @@ func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, star
 		return nil, err
 	}
 
-	var elementStatuses []descriptor.Interface
+	var elementStatuses []*element.Descriptor
 	reportLength := int(resp[5])<<16 | int(resp[6])<<8 | int(resp[7])
 
 	pos := 8
@@ -43,7 +42,7 @@ func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, star
 		pos += 8
 		subPos := 0
 		for subPos < pageLength && pos+subPos+elementLength <= reportLength+8 {
-			desc, err := descriptor.Parse(elementType, hasVolTag, resp[pos+subPos:pos+subPos+elementLength])
+			desc, err := element.ParseDescriptor(elementType, hasVolTag, resp[pos+subPos:pos+subPos+elementLength])
 			if err != nil {
 				return nil, err
 			}
