@@ -31,7 +31,7 @@ class FileInfo:
             "size": self.size,
             "mtime": self.mtime,
             "partition": self.partition,
-            "startblock": self.startblock
+            "start_block": self.startblock
         }
 
     @staticmethod
@@ -40,7 +40,7 @@ class FileInfo:
             size=data["size"],
             mtime=data["mtime"],
             partition=data["partition"],
-            startblock=data["startblock"]
+            startblock=data["start_block"]
         )
 
     def is_better_than(self, other: 'FileInfo'):
