@@ -10,7 +10,8 @@ const (
 
 func (d *SCSIDevice) MoveMedium(sourceAddress uint16, destAddress uint16, moveOption MoveOption) error {
 	_, err := d.request([]byte{
-		MOVE_MEDIUM, 0x00,
+		MOVE_MEDIUM,
+		0x00,
 		0x00, 0x00, // Transport element address, no library seems to care about this and auto-select the arm instead
 		uint8(sourceAddress >> 8), uint8(sourceAddress & 0xFF),
 		uint8(destAddress >> 8), uint8(destAddress & 0xFF),
