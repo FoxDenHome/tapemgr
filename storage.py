@@ -3,6 +3,7 @@ from os import path, scandir
 from json import dump, load
 from typing import TYPE_CHECKING, Any
 from util import is_dry_run
+from traceback import print_exc
 
 if TYPE_CHECKING:
   from tape import Tape
@@ -49,6 +50,7 @@ class Storage:
                 tape = Tape.from_dict(load(fh))
                 tapes[tape.barcode] = tape
                 fh.close()
-            except Exception as e:
-                print('Error loading tape data "%s": %s' % (file.name, e))
+            except:
+                print('Error loading tape data "%s"' % file.name)
+                print_exc()
         self.tapes = tapes
