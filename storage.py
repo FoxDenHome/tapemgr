@@ -1,14 +1,9 @@
 # pyright: reportImportCycles=false
 from os import path, scandir
 from json import dump, load
-from typing import TYPE_CHECKING, Any
 from util import is_dry_run
 from traceback import print_exc
-
-if TYPE_CHECKING:
-  from tape import Tape
-else:
-    Tape = Any
+from tape import Tape
 
 class Storage:
     dir: str
