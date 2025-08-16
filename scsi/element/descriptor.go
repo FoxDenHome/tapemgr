@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-const VOLUME_TAG_LENGTH = 36
+const (
+	VolumeTagLength   = 36
+	DeviceIDLengthMax = 32
+)
 
 type MediumType uint8
 type CodeSet uint8
@@ -48,7 +51,7 @@ type Descriptor struct {
 func ParseDescriptor(elementType Type, hasPVolTag bool, data []byte) (*Descriptor, error) {
 	dataLength := 16
 	if hasPVolTag {
-		dataLength += VOLUME_TAG_LENGTH
+		dataLength += VolumeTagLength
 	}
 	if len(data) < dataLength {
 		return nil, fmt.Errorf("too small data length for element descriptor: expected >= %d, got %d", dataLength, len(data))
@@ -56,7 +59,7 @@ func ParseDescriptor(elementType Type, hasPVolTag bool, data []byte) (*Descripto
 
 	volTagEnd := 12
 	if hasPVolTag {
-		volTagEnd += VOLUME_TAG_LENGTH
+		volTagEnd += VolumeTagLength
 	}
 	identifierLen := int(data[volTagEnd+3])
 

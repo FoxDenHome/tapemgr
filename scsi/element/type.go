@@ -10,6 +10,8 @@ const (
 	ELEMENT_TYPE_DATA_TRANSFER    Type = 0x04
 )
 
+const ElementTypes = 4
+
 func (t Type) String() string {
 	switch t {
 	case ELEMENT_TYPE_ALL:
