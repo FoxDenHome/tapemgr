@@ -5,7 +5,7 @@ from changer import Changer
 from drive import Drive
 from util import logged_check_output, is_dry_run
 from xattr import getxattr
-from typing import cast
+from typing import cast, Any
 
 
 
@@ -30,12 +30,33 @@ class FileInfo:
         return self.mtime > other.mtime
 
 class Tape:
+    barcode: str
+    files: dict[str, FileInfo]
+    size: int
+    free: int
+
     def __init__(self, barcode: str):
         super().__init__()
         self.barcode = barcode
         self.files: dict[str, FileInfo] = {}
         self.size = 0
         self.free = 0
+
+    def as_dict(self):
+        return {
+            "barcode": self.barcode,
+            "files": self.files,
+            "size": self.size,
+            "free": self.free
+        }
+    
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> 'Tape':
+        tape = Tape(barcode=data["barcode"])
+        tape.files = data["files"]
+        tape.size = data["size"]
+        tape.free = data["free"]
+        return tape
 
     def verify_in_changer(self, changer: Changer):
         if is_dry_run():
