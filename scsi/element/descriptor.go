@@ -45,9 +45,9 @@ type Descriptor struct {
 	Identifier                  string
 }
 
-func ParseDescriptor(elementType Type, hasVolTag bool, data []byte) (*Descriptor, error) {
+func ParseDescriptor(elementType Type, hasPVolTag bool, data []byte) (*Descriptor, error) {
 	dataLength := 16
-	if hasVolTag {
+	if hasPVolTag {
 		dataLength += VOLUME_TAG_LENGTH
 	}
 	if len(data) < dataLength {
@@ -55,7 +55,7 @@ func ParseDescriptor(elementType Type, hasVolTag bool, data []byte) (*Descriptor
 	}
 
 	volTagEnd := 12
-	if hasVolTag {
+	if hasPVolTag {
 		volTagEnd += VOLUME_TAG_LENGTH
 	}
 	identifierLen := int(data[volTagEnd+3])
@@ -75,7 +75,7 @@ func ParseDescriptor(elementType Type, hasVolTag bool, data []byte) (*Descriptor
 		Flags: uint16(data[9])<<8 | uint16(data[2]),
 	}
 
-	if hasVolTag {
+	if hasPVolTag {
 		baseDesc.VolumeTag = strings.Trim(string(data[12:48]), " ")
 	}
 

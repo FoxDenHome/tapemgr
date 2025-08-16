@@ -15,7 +15,13 @@ func main() {
 		log.Fatalf("Failed to open SCSI device: %v", err)
 	}
 
-	status, err := sch.ReadElementStatus(0, element.ELEMENT_TYPE_ALL, 0, 100, true, false, true)
+	ready, err := sch.IsReady()
+	if err != nil {
+		log.Fatalf("Failed to check if SCSI device is ready: %v", err)
+	}
+	log.Printf("SCSI device is ready: %v", ready)
+
+	status, err := sch.ReadElementStatus(element.ELEMENT_TYPE_ALL, 0, 100, true, false, true)
 	if err != nil {
 		log.Fatalf("Failed to read element status: %v", err)
 	}

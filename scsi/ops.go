@@ -1,0 +1,8 @@
+package scsi
+
+const (
+	TEST_UNIT_READY     = 0x00
+	POSITION_TO_ELEMENT = 0x2B
+	MOVE_MEDIUM         = 0xA5
+	READ_ELEMENT_STATUS = 0xB8
+)

@@ -13,3 +13,16 @@ func NewSCSIDevice(path string) (*SCSIDevice, error) {
 	}
 	return &SCSIDevice{dev: &dev}, nil
 }
+
+func (d *SCSIDevice) Close() error {
+	return d.dev.Close()
+}
+
+func (d *SCSIDevice) request(req []byte, respLen int) ([]byte, error) {
+	resp := make([]byte, respLen)
+	err := d.dev.Request(req, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

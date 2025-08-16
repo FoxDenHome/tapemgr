@@ -5,25 +5,18 @@ import (
 	"github.com/FoxDenHome/tapemgr/util"
 )
 
-const (
-	READ_ELEMENT_STATUS = 0xB8
-)
+const ELEMENT_STATUS_RESPONSE_LENGTH = 65535
 
-func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, start uint16, count uint16, curData bool, readVolumeTag bool, readDeviceId bool) ([]*element.Descriptor, error) {
-	respLen := 65536
-	resp := make([]byte, respLen)
-
-	req := []byte{
+func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, count uint16, curData bool, readVolumeTag bool, readDeviceId bool) ([]*element.Descriptor, error) {
+	resp, err := d.request([]byte{
 		READ_ELEMENT_STATUS,
-		lun<<5 | util.BoolToFlag(readVolumeTag, 4) | uint8(elementType),
+		util.BoolToFlag(readVolumeTag, 4) | uint8(elementType),
 		uint8(start >> 8), uint8(start & 0xFF),
 		uint8(count >> 8), uint8(count & 0xFF),
 		util.BoolToFlag(curData, 1) | util.BoolToFlag(readDeviceId, 0),
-		uint8(respLen >> 16), uint8((respLen >> 8) & 0xFF), uint8(respLen & 0xFF),
+		uint8(ELEMENT_STATUS_RESPONSE_LENGTH >> 16), uint8((ELEMENT_STATUS_RESPONSE_LENGTH >> 8) & 0xFF), uint8(ELEMENT_STATUS_RESPONSE_LENGTH & 0xFF),
 		0x00, 0x00,
-	}
-
-	err := d.dev.Request(req, resp)
+	}, ELEMENT_STATUS_RESPONSE_LENGTH)
 	if err != nil {
 		return nil, err
 	}
@@ -37,12 +30,12 @@ func (d *SCSIDevice) ReadElementStatus(lun uint8, elementType element.Type, star
 		elementLength := int(resp[pos+2])<<8 | int(resp[pos+3])
 		pageLength := int(resp[pos+5])<<16 | int(resp[pos+6])<<8 | int(resp[pos+7])
 
-		hasVolTag := util.FlagToBool(resp[pos+1], 7)
+		hasPVolTag := util.FlagToBool(resp[pos+1], 7)
 
 		pos += 8
 		subPos := 0
 		for subPos < pageLength && pos+subPos+elementLength <= reportLength+8 {
-			desc, err := element.ParseDescriptor(elementType, hasVolTag, resp[pos+subPos:pos+subPos+elementLength])
+			desc, err := element.ParseDescriptor(elementType, hasPVolTag, resp[pos+subPos:pos+subPos+elementLength])
 			if err != nil {
 				return nil, err
 			}
