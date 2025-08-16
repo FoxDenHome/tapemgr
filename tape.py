@@ -6,6 +6,7 @@ from drive import Drive
 from util import logged_check_output, is_dry_run
 from xattr import getxattr
 from typing import cast, Any
+from datetime import datetime, timezone
 
 
 
@@ -29,7 +30,7 @@ class FileInfo:
     def as_dict(self) -> dict[str, Any]:
         return {
             "size": self.size,
-            "mtime": self.mtime,
+            "modified_time": datetime.fromtimestamp(self.mtime, tz=timezone.utc).isoformat(),
             "partition": self.partition,
             "start_block": self.startblock
         }
@@ -38,7 +39,7 @@ class FileInfo:
     def from_dict(data: dict[str, Any]) -> 'FileInfo':
         return FileInfo(
             size=data["size"],
-            mtime=data["mtime"],
+            mtime=datetime.fromisoformat(data["mtime"]).astimezone(timezone.utc).timestamp(),
             partition=data["partition"],
             startblock=data["start_block"]
         )
