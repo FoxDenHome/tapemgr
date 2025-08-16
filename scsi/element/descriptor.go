@@ -2,6 +2,7 @@ package element
 
 import (
 	"fmt"
+	"strings"
 )
 
 const VOLUME_TAG_LENGTH = 36
@@ -31,9 +32,8 @@ const (
 )
 
 type Descriptor struct {
-	Address     uint16
-	ElementType Type
-
+	Address                     uint16
+	ElementType                 Type
 	Flags                       uint16
 	ExceptionSenseCode          uint8
 	ExceptionSenseCodeQualifier uint8
@@ -70,13 +70,13 @@ func ParseDescriptor(elementType Type, hasVolTag bool, data []byte) (*Descriptor
 		SourceElementAddress:        uint16(data[10])<<8 | uint16(data[11]),
 		CodeSet:                     CodeSet(data[volTagEnd] & 0x0F),
 		IdentifierType:              IdentifierType(data[volTagEnd+1] & 0x0F),
-		Identifier:                  string(data[volTagEnd+4 : volTagEnd+4+identifierLen]),
+		Identifier:                  strings.Trim(string(data[volTagEnd+4:volTagEnd+4+identifierLen]), " "),
 
 		Flags: uint16(data[9])<<8 | uint16(data[2]),
 	}
 
 	if hasVolTag {
-		baseDesc.VolumeTag = string(data[12:48])
+		baseDesc.VolumeTag = strings.Trim(string(data[12:48]), " ")
 	}
 
 	return baseDesc, nil
