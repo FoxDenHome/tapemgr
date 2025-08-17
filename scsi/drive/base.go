@@ -20,7 +20,7 @@ type TapeDrive struct {
 
 func NewTapeDrive(devicePath string, mountPoint string) (*TapeDrive, error) {
 	devName := strings.TrimPrefix(devicePath, "/dev/")
-	genericLink := fmt.Sprintf("/sys/class/scsi_Tape/%s/device/generic", devName)
+	genericLink := fmt.Sprintf("/sys/class/scsi_tape/%s/device/generic", devName)
 
 	linkDest, err := os.Readlink(genericLink)
 	if err != nil {
