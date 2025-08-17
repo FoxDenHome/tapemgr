@@ -122,12 +122,3 @@ func (c *FileCryptor) decryptFile(src, dest string) error {
 	_, err = io.Copy(destFile, reader)
 	return err
 }
-
-func copyFileTimes(src, dest string) error {
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	modTime := srcInfo.ModTime()
-	return os.Chtimes(dest, modTime, modTime)
-}
