@@ -44,6 +44,18 @@ func NewTapeDrive(devicePath string, mountPoint string) (*TapeDrive, error) {
 }
 
 func (d *TapeDrive) Load() error {
+	return d.loadUnload(scsi.LOAD_AND_THREAD)
+}
+
+func (d *TapeDrive) Unload() error {
+	return d.loadUnload(scsi.UNLOAD_ARCHIVE)
+}
+
+func (d *TapeDrive) MountPoint() string {
+	return d.mountPoint
+}
+
+func (d *TapeDrive) loadUnload(op scsi.LoadUnloadOperation) error {
 	if d.isMounted() {
 		return ErrAlreadyMounted
 	}
@@ -60,7 +72,7 @@ func (d *TapeDrive) Load() error {
 	if err != nil {
 		return err
 	}
-	err = dev.LoadUnload(scsi.LOAD_AND_THREAD)
+	err = dev.LoadUnload(op)
 	if err != nil {
 		return err
 	}
@@ -69,8 +81,4 @@ func (d *TapeDrive) Load() error {
 		return err
 	}
 	return nil
-}
-
-func (d *TapeDrive) MountPoint() string {
-	return d.mountPoint
 }
