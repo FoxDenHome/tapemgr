@@ -37,13 +37,13 @@ func (c *NameCryptor) Encrypt(name string) string {
 	encrypter := cipher.NewCBCEncrypter(c.cipher, c.iv)
 
 	parts := strings.Split(name, "/")
+
 	encryptedParts := make([]string, 0, len(parts))
 	for _, part := range parts {
 		encryptedPart := c.encryptPart(part, encrypter)
 		for len(encryptedPart) > MAX_PART_LEN {
-			encryptedSubPart := encryptedPart[:MAX_PART_LEN] + ","
+			encryptedParts = append(encryptedParts, encryptedPart[:MAX_PART_LEN]+",")
 			encryptedPart = "," + encryptedPart[MAX_PART_LEN:]
-			encryptedParts = append(encryptedParts, encryptedSubPart)
 		}
 		encryptedParts = append(encryptedParts, encryptedPart)
 	}
@@ -59,9 +59,10 @@ func (c *NameCryptor) encryptPart(part string, encrypter cipher.BlockMode) strin
 
 func (c *NameCryptor) Decrypt(name string) string {
 	decrypter := cipher.NewCBCDecrypter(c.cipher, c.iv)
-	nameNormalized := strings.ReplaceAll(name, ",/,", "")
 
+	nameNormalized := strings.ReplaceAll(name, ",/,", "")
 	parts := strings.Split(nameNormalized, "/")
+
 	decryptedParts := make([]string, 0, len(parts))
 	for _, part := range parts {
 		decryptedParts = append(decryptedParts, c.decryptPart(part, decrypter))
