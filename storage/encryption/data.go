@@ -62,19 +62,19 @@ func (c *FileCryptor) encryptFile(src, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	destFile, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer func() { _ = destFile.Close() }()
 
 	writer, err := c.Encrypt(destFile)
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
+	defer func() { _ = writer.Close() }()
 
 	_, err = io.Copy(writer, srcFile)
 	return err
@@ -108,13 +108,13 @@ func (c *FileCryptor) decryptFile(src, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	destFile, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer func() { _ = destFile.Close() }()
 
 	reader, err := c.Decrypt(srcFile)
 	if err != nil {
