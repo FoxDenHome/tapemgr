@@ -14,6 +14,13 @@ type MappedCryptor struct {
 }
 
 func NewMappedCryptor(file *FileCryptor, path *PathCryptor, sourcePrefix, encryptedPrefix string) (*MappedCryptor, error) {
+	if !filepath.IsAbs(sourcePrefix) {
+		return nil, fmt.Errorf("source prefix %s is not absolute", sourcePrefix)
+	}
+	if !filepath.IsAbs(encryptedPrefix) {
+		return nil, fmt.Errorf("encrypted prefix %s is not absolute", encryptedPrefix)
+	}
+
 	return &MappedCryptor{
 		file:            file,
 		path:            path,
