@@ -14,6 +14,15 @@ type FileCryptor struct {
 	recipient age.Recipient
 }
 
+func copyFileTimes(src, dest string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	modTime := srcInfo.ModTime()
+	return os.Chtimes(dest, modTime, modTime)
+}
+
 func NewFileCryptor(identityStr string) (*FileCryptor, error) {
 	identity, err := age.ParseX25519Identity(identityStr)
 	if err != nil {
@@ -39,7 +48,16 @@ func (c *FileCryptor) Encrypt(dst io.Writer) (io.WriteCloser, error) {
 	return age.Encrypt(dst, c.recipient)
 }
 
-func (c *FileCryptor) EncryptFile(src string, dest string) error {
+func (c *FileCryptor) EncryptFile(src, dest string) error {
+	err := c.encryptFile(src, dest)
+	if err != nil {
+		_ = os.Remove(dest)
+		return err
+	}
+	return copyFileTimes(src, dest)
+}
+
+func (c *FileCryptor) encryptFile(src, dest string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
@@ -62,7 +80,7 @@ func (c *FileCryptor) EncryptFile(src string, dest string) error {
 	return err
 }
 
-func (c *FileCryptor) EncryptFileMakedirs(src string, dest string) error {
+func (c *FileCryptor) EncryptFileMakedirs(src, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
@@ -76,7 +94,16 @@ func (c *FileCryptor) Decrypt(src io.Reader) (io.Reader, error) {
 	return age.Decrypt(src, c.identity)
 }
 
-func (c *FileCryptor) DecryptFile(src string, dest string) error {
+func (c *FileCryptor) DecryptFile(src, dest string) error {
+	err := c.decryptFile(src, dest)
+	if err != nil {
+		_ = os.Remove(dest)
+		return err
+	}
+	return copyFileTimes(src, dest)
+}
+
+func (c *FileCryptor) decryptFile(src, dest string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
@@ -98,7 +125,7 @@ func (c *FileCryptor) DecryptFile(src string, dest string) error {
 	return err
 }
 
-func (c *FileCryptor) DecryptFileMakedirs(src string, dest string) error {
+func (c *FileCryptor) DecryptFileMakedirs(src, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
