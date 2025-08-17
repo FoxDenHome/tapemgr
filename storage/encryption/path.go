@@ -7,11 +7,10 @@ import (
 	"strings"
 )
 
-const MAX_PART_LEN = 250
-
 type PathCryptor struct {
-	cipher cipher.Block
-	iv     []byte
+	maxPathPartLen int
+	cipher         cipher.Block
+	iv             []byte
 }
 
 func NewPathCryptor(key []byte) (*PathCryptor, error) {
@@ -20,8 +19,9 @@ func NewPathCryptor(key []byte) (*PathCryptor, error) {
 		return nil, err
 	}
 	return &PathCryptor{
-		cipher: cipher,
-		iv:     make([]byte, aes.BlockSize),
+		cipher:         cipher,
+		maxPathPartLen: 250,
+		iv:             make([]byte, aes.BlockSize),
 	}, nil
 }
 
@@ -33,9 +33,9 @@ func (c *PathCryptor) Encrypt(path string) string {
 	encryptedParts := make([]string, 0, len(parts))
 	for _, part := range parts {
 		encryptedPart := c.encryptPart(part, encrypter)
-		for len(encryptedPart) > MAX_PART_LEN {
-			encryptedParts = append(encryptedParts, encryptedPart[:MAX_PART_LEN]+",")
-			encryptedPart = "," + encryptedPart[MAX_PART_LEN:]
+		for len(encryptedPart) > c.maxPathPartLen {
+			encryptedParts = append(encryptedParts, encryptedPart[:c.maxPathPartLen]+",")
+			encryptedPart = "," + encryptedPart[c.maxPathPartLen:]
 		}
 		encryptedParts = append(encryptedParts, encryptedPart)
 	}
