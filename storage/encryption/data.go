@@ -14,15 +14,6 @@ type FileCryptor struct {
 	recipient age.Recipient
 }
 
-func copyFileTimes(src, dest string) error {
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	modTime := srcInfo.ModTime()
-	return os.Chtimes(dest, modTime, modTime)
-}
-
 func NewFileCryptor(identityStr string) (*FileCryptor, error) {
 	identity, err := age.ParseX25519Identity(identityStr)
 	if err != nil {
@@ -57,29 +48,6 @@ func (c *FileCryptor) EncryptFile(src, dest string) error {
 	return copyFileTimes(src, dest)
 }
 
-func (c *FileCryptor) encryptFile(src, dest string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = srcFile.Close() }()
-
-	destFile, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = destFile.Close() }()
-
-	writer, err := c.Encrypt(destFile)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = writer.Close() }()
-
-	_, err = io.Copy(writer, srcFile)
-	return err
-}
-
 func (c *FileCryptor) EncryptFileMakedirs(src, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
@@ -101,6 +69,36 @@ func (c *FileCryptor) DecryptFile(src, dest string) error {
 		return err
 	}
 	return copyFileTimes(src, dest)
+}
+
+func (c *FileCryptor) DecryptFileMakedirs(src, dest string) error {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return c.DecryptFile(src, dest)
+}
+
+func (c *FileCryptor) encryptFile(src, dest string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = srcFile.Close() }()
+
+	destFile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = destFile.Close() }()
+
+	writer, err := c.Encrypt(destFile)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = writer.Close() }()
+
+	_, err = io.Copy(writer, srcFile)
+	return err
 }
 
 func (c *FileCryptor) decryptFile(src, dest string) error {
@@ -125,9 +123,11 @@ func (c *FileCryptor) decryptFile(src, dest string) error {
 	return err
 }
 
-func (c *FileCryptor) DecryptFileMakedirs(src, dest string) error {
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+func copyFileTimes(src, dest string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
 		return err
 	}
-	return c.DecryptFile(src, dest)
+	modTime := srcInfo.ModTime()
+	return os.Chtimes(dest, modTime, modTime)
 }
