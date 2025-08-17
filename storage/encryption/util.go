@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func copyFileTimes(src, dest string) error {
+func copyFileModTime(src, dest string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return err
