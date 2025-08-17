@@ -10,3 +10,15 @@ func (d *SCSIDevice) TestUnitReady() (bool, error) {
 
 	return resp[5] == 0x00, nil
 }
+
+func (d *SCSIDevice) WaitForReady() error {
+	for {
+		ready, err := d.TestUnitReady()
+		if err != nil {
+			return err
+		}
+		if ready {
+			return nil
+		}
+	}
+}

@@ -50,7 +50,15 @@ func (d *TapeDrive) Mount() error {
 	if err != nil {
 		return err
 	}
+	err = dev.WaitForReady()
+	if err != nil {
+		return err
+	}
 	err = dev.LoadUnload(scsi.LOAD_AND_THREAD)
+	if err != nil {
+		return err
+	}
+	err = dev.WaitForReady()
 	if err != nil {
 		return err
 	}
