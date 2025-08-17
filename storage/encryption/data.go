@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"errors"
 	"io"
 	"os"
 
@@ -61,6 +62,9 @@ func (c *FileCryptor) EncryptFile(src string, dest string) error {
 }
 
 func (c *FileCryptor) Decrypt(src io.Reader) (io.Reader, error) {
+	if c.identity == nil {
+		return nil, errors.New("this FileCryptor instance is not configured for decryption")
+	}
 	return age.Decrypt(src, c.identity)
 }
 
