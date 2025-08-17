@@ -7,10 +7,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/FoxDenHome/tapemgr/scsi"
 )
+
+var ErrAlreadyMounted = errors.New("tape drive is already mounted")
+var ErrLTFSExited = errors.New("ltfs command exited unexpectedly")
 
 type TapeDrive struct {
 	DevicePath  string
@@ -21,7 +23,12 @@ type TapeDrive struct {
 }
 
 func NewTapeDrive(devicePath string, mountPoint string) (*TapeDrive, error) {
-	devName := strings.TrimPrefix(devicePath, "/dev/")
+	realDevicePath, err := filepath.EvalSymlinks(devicePath)
+	if err != nil {
+		return nil, err
+	}
+
+	devName := strings.TrimPrefix(realDevicePath, "/dev/")
 	genericLink := fmt.Sprintf("/sys/class/scsi_tape/%s/device/generic", devName)
 
 	linkDest, err := os.Readlink(genericLink)
@@ -36,20 +43,19 @@ func NewTapeDrive(devicePath string, mountPoint string) (*TapeDrive, error) {
 	}, nil
 }
 
-func (d *TapeDrive) Mount() error {
-	if isMount(d.mountPoint) {
-		return nil
-	}
-
-	err := d.Unmount()
-	if err != nil {
-		return err
+func (d *TapeDrive) Load() error {
+	if d.isMounted() {
+		return ErrAlreadyMounted
 	}
 
 	dev, err := scsi.Open(d.DevicePath)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = dev.Close()
+	}()
+
 	err = dev.WaitForReady()
 	if err != nil {
 		return err
@@ -62,67 +68,9 @@ func (d *TapeDrive) Mount() error {
 	if err != nil {
 		return err
 	}
-	_ = dev.Close()
-
-	d.mountProc = exec.Command("ltfs", "-o", "devname="+d.GenericPath, "-f", "-o", "umask=077", "-o", "eject", "-o", "sync_type=unmount", d.mountPoint)
-	d.mountProc.Stdout = os.Stdout
-	d.mountProc.Stderr = os.Stderr
-
-	err = d.mountProc.Start()
-	if err != nil {
-		return fmt.Errorf("error mounting tape drive: %v", err)
-	}
-
-	for {
-		if syscall.Kill(d.mountProc.Process.Pid, 0) != nil {
-			return errors.New("ltfs command exited unexpectedly")
-		}
-
-		if isMount(d.mountPoint) {
-			return nil
-		}
-	}
-}
-
-func (d *TapeDrive) Unmount() error {
-	if d.mountProc == nil {
-		return nil
-	}
-
-	err := syscall.Unmount(d.mountPoint, 0)
-	if err != nil {
-		return err
-	}
-
-	proc := d.mountProc
-	d.mountProc = nil
-	return proc.Wait()
-}
-
-func (d *TapeDrive) Barcode() string {
-	return "TODO"
+	return nil
 }
 
 func (d *TapeDrive) MountPoint() string {
 	return d.mountPoint
-}
-
-func isMount(path string) bool {
-	mounts, err := os.ReadFile("/proc/self/mounts")
-	if err != nil {
-		return false
-	}
-
-	for _, line := range strings.Split(string(mounts), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 2 {
-			continue
-		}
-
-		if fields[1] == path {
-			return true
-		}
-	}
-
-	return false
 }
