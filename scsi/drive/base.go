@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/FoxDenHome/tapemgr/scsi"
 )
 
 type TapeDrive struct {
@@ -43,6 +45,16 @@ func (d *TapeDrive) Mount() error {
 	if err != nil {
 		return err
 	}
+
+	dev, err := scsi.Open(d.DevicePath)
+	if err != nil {
+		return err
+	}
+	err = dev.LoadUnload(scsi.LOAD_AND_THREAD)
+	if err != nil {
+		return err
+	}
+	_ = dev.Close()
 
 	d.mountProc = exec.Command("ltfs", "-o", "devname="+d.GenericPath, "-f", "-o", "umask=077", "-o", "eject", "-o", "sync_type=unmount", d.mountPoint)
 	d.mountProc.Stdout = os.Stdout
