@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 
 	"filippo.io/age"
 )
@@ -61,6 +62,13 @@ func (c *FileCryptor) EncryptFile(src string, dest string) error {
 	return err
 }
 
+func (c *FileCryptor) EncryptFileMakedirs(src string, dest string) error {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return c.EncryptFile(src, dest)
+}
+
 func (c *FileCryptor) Decrypt(src io.Reader) (io.Reader, error) {
 	if c.identity == nil {
 		return nil, errors.New("this FileCryptor instance is not configured for decryption")
@@ -88,4 +96,11 @@ func (c *FileCryptor) DecryptFile(src string, dest string) error {
 
 	_, err = io.Copy(destFile, reader)
 	return err
+}
+
+func (c *FileCryptor) DecryptFileMakedirs(src string, dest string) error {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return c.DecryptFile(src, dest)
 }
