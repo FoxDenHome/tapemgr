@@ -9,26 +9,26 @@ import (
 
 const MAX_PART_LEN = 250
 
-type NameCryptor struct {
+type PathCryptor struct {
 	cipher cipher.Block
 	iv     []byte
 }
 
-func NewNameCryptor(key []byte) (*NameCryptor, error) {
+func NewPathCryptor(key []byte) (*PathCryptor, error) {
 	cipher, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
-	return &NameCryptor{
+	return &PathCryptor{
 		cipher: cipher,
 		iv:     make([]byte, aes.BlockSize),
 	}, nil
 }
 
-func (c *NameCryptor) Encrypt(name string) string {
+func (c *PathCryptor) Encrypt(path string) string {
 	encrypter := cipher.NewCBCEncrypter(c.cipher, c.iv)
 
-	parts := strings.Split(name, "/")
+	parts := strings.Split(path, "/")
 
 	encryptedParts := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -42,11 +42,11 @@ func (c *NameCryptor) Encrypt(name string) string {
 	return strings.Join(encryptedParts, "/")
 }
 
-func (c *NameCryptor) Decrypt(name string) string {
+func (c *PathCryptor) Decrypt(path string) string {
 	decrypter := cipher.NewCBCDecrypter(c.cipher, c.iv)
 
-	nameNormalized := strings.ReplaceAll(name, ",/,", "")
-	parts := strings.Split(nameNormalized, "/")
+	pathNormalized := strings.ReplaceAll(path, ",/,", "")
+	parts := strings.Split(pathNormalized, "/")
 
 	decryptedParts := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -55,23 +55,15 @@ func (c *NameCryptor) Decrypt(name string) string {
 	return strings.Join(decryptedParts, "/")
 }
 
-func (c *NameCryptor) encryptPart(part string, encrypter cipher.BlockMode) string {
-	data := make([]byte, paddedLen(len(part)))
+func (c *PathCryptor) encryptPart(part string, encrypter cipher.BlockMode) string {
+	data := make([]byte, padToAESBlockSize(len(part)))
 	copy(data, part)
 	encrypter.CryptBlocks(data, data)
 	return base64.URLEncoding.EncodeToString(data)
 }
 
-func (c *NameCryptor) decryptPart(part string, decrypter cipher.BlockMode) string {
+func (c *PathCryptor) decryptPart(part string, decrypter cipher.BlockMode) string {
 	data, _ := base64.URLEncoding.DecodeString(part)
 	decrypter.CryptBlocks(data, data)
 	return strings.TrimRight(string(data), "\x00")
-}
-
-func paddedLen(len int) int {
-	if len%aes.BlockSize == 0 {
-		return len
-	}
-	len += aes.BlockSize - (len % aes.BlockSize)
-	return len
 }

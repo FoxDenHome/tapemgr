@@ -1,6 +1,9 @@
 package encryption
 
-import "os"
+import (
+	"crypto/aes"
+	"os"
+)
 
 func copyFileTimes(src, dest string) error {
 	srcInfo, err := os.Stat(src)
@@ -9,4 +12,12 @@ func copyFileTimes(src, dest string) error {
 	}
 	modTime := srcInfo.ModTime()
 	return os.Chtimes(dest, modTime, modTime)
+}
+
+func padToAESBlockSize(len int) int {
+	if len%aes.BlockSize == 0 {
+		return len
+	}
+	len += aes.BlockSize - (len % aes.BlockSize)
+	return len
 }

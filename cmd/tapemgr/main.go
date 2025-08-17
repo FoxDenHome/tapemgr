@@ -15,7 +15,7 @@ func main() {
 		log.Fatalf("Failed to read tape filename key: %v", err)
 	}
 
-	nameCryptor, err := encryption.NewNameCryptor(filenameKey)
+	nameCryptor, err := encryption.NewPathCryptor(filenameKey)
 	if err != nil {
 		log.Fatalf("Failed to create name cryptor: %v", err)
 	}

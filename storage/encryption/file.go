@@ -35,12 +35,8 @@ func NewFileCryptorEncryptOnly(recipientStr string) (*FileCryptor, error) {
 	}, nil
 }
 
-func (c *FileCryptor) Encrypt(dst io.Writer) (io.WriteCloser, error) {
-	return age.Encrypt(dst, c.recipient)
-}
-
-func (c *FileCryptor) EncryptFile(src, dest string) error {
-	err := c.encryptFile(src, dest)
+func (c *FileCryptor) Encrypt(src, dest string) error {
+	err := c.encrypt(src, dest)
 	if err != nil {
 		_ = os.Remove(dest)
 		return err
@@ -48,22 +44,15 @@ func (c *FileCryptor) EncryptFile(src, dest string) error {
 	return copyFileTimes(src, dest)
 }
 
-func (c *FileCryptor) EncryptFileMakedirs(src, dest string) error {
+func (c *FileCryptor) EncryptMkdirAll(src, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	return c.EncryptFile(src, dest)
+	return c.Encrypt(src, dest)
 }
 
-func (c *FileCryptor) Decrypt(src io.Reader) (io.Reader, error) {
-	if c.identity == nil {
-		return nil, errors.New("this FileCryptor instance is not configured for decryption")
-	}
-	return age.Decrypt(src, c.identity)
-}
-
-func (c *FileCryptor) DecryptFile(src, dest string) error {
-	err := c.decryptFile(src, dest)
+func (c *FileCryptor) Decrypt(src, dest string) error {
+	err := c.decrypt(src, dest)
 	if err != nil {
 		_ = os.Remove(dest)
 		return err
@@ -71,14 +60,14 @@ func (c *FileCryptor) DecryptFile(src, dest string) error {
 	return copyFileTimes(src, dest)
 }
 
-func (c *FileCryptor) DecryptFileMakedirs(src, dest string) error {
+func (c *FileCryptor) DecryptMkdirAll(src, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	return c.DecryptFile(src, dest)
+	return c.Decrypt(src, dest)
 }
 
-func (c *FileCryptor) encryptFile(src, dest string) error {
+func (c *FileCryptor) encrypt(src, dest string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
@@ -91,7 +80,7 @@ func (c *FileCryptor) encryptFile(src, dest string) error {
 	}
 	defer func() { _ = destFile.Close() }()
 
-	writer, err := c.Encrypt(destFile)
+	writer, err := age.Encrypt(destFile, c.recipient)
 	if err != nil {
 		return err
 	}
@@ -101,7 +90,11 @@ func (c *FileCryptor) encryptFile(src, dest string) error {
 	return err
 }
 
-func (c *FileCryptor) decryptFile(src, dest string) error {
+func (c *FileCryptor) decrypt(src, dest string) error {
+	if c.identity == nil {
+		return errors.New("this FileCryptor instance is not configured for decryption")
+	}
+
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
@@ -114,7 +107,7 @@ func (c *FileCryptor) decryptFile(src, dest string) error {
 	}
 	defer func() { _ = destFile.Close() }()
 
-	reader, err := c.Decrypt(srcFile)
+	reader, err := age.Decrypt(srcFile, c.identity)
 	if err != nil {
 		return err
 	}
