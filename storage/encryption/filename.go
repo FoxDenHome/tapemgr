@@ -14,14 +14,6 @@ type NameCryptor struct {
 	iv     []byte
 }
 
-func paddedLen(len int) int {
-	if len%aes.BlockSize == 0 {
-		return len
-	}
-	len += aes.BlockSize - (len % aes.BlockSize)
-	return len
-}
-
 func NewNameCryptor(key []byte) (*NameCryptor, error) {
 	cipher, err := aes.NewCipher(key)
 	if err != nil {
@@ -50,13 +42,6 @@ func (c *NameCryptor) Encrypt(name string) string {
 	return strings.Join(encryptedParts, "/")
 }
 
-func (c *NameCryptor) encryptPart(part string, encrypter cipher.BlockMode) string {
-	paddedData := make([]byte, paddedLen(len(part)))
-	copy(paddedData, part)
-	encrypter.CryptBlocks(paddedData, paddedData)
-	return base64.URLEncoding.EncodeToString(paddedData)
-}
-
 func (c *NameCryptor) Decrypt(name string) string {
 	decrypter := cipher.NewCBCDecrypter(c.cipher, c.iv)
 
@@ -70,8 +55,23 @@ func (c *NameCryptor) Decrypt(name string) string {
 	return strings.Join(decryptedParts, "/")
 }
 
+func (c *NameCryptor) encryptPart(part string, encrypter cipher.BlockMode) string {
+	data := make([]byte, paddedLen(len(part)))
+	copy(data, part)
+	encrypter.CryptBlocks(data, data)
+	return base64.URLEncoding.EncodeToString(data)
+}
+
 func (c *NameCryptor) decryptPart(part string, decrypter cipher.BlockMode) string {
 	data, _ := base64.URLEncoding.DecodeString(part)
 	decrypter.CryptBlocks(data, data)
 	return strings.TrimRight(string(data), "\x00")
+}
+
+func paddedLen(len int) int {
+	if len%aes.BlockSize == 0 {
+		return len
+	}
+	len += aes.BlockSize - (len % aes.BlockSize)
+	return len
 }
