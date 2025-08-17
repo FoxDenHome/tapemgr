@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/FoxDenHome/tapemgr/scsi/element"
-	"github.com/FoxDenHome/tapemgr/util"
 )
 
 func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, count uint16, curData bool, readVolumeTag bool, readDeviceId bool) ([]*element.Descriptor, error) {
@@ -20,10 +19,10 @@ func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, c
 
 	resp, err := d.request([]byte{
 		READ_ELEMENT_STATUS,
-		util.BoolToFlag(readVolumeTag, 4) | uint8(elementType),
+		boolToFlag(readVolumeTag, 4) | uint8(elementType),
 		uint8(start >> 8), uint8(start & 0xFF),
 		uint8(count >> 8), uint8(count & 0xFF),
-		util.BoolToFlag(curData, 1) | util.BoolToFlag(readDeviceId, 0),
+		boolToFlag(curData, 1) | boolToFlag(readDeviceId, 0),
 		uint8(reservedRespLen >> 16), uint8((reservedRespLen >> 8) & 0xFF), uint8(reservedRespLen & 0xFF),
 		0x00, 0x00,
 	}, reservedRespLen)
@@ -40,8 +39,8 @@ func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, c
 		elementLength := int(resp[pos+2])<<8 | int(resp[pos+3])
 		pageLength := int(resp[pos+5])<<16 | int(resp[pos+6])<<8 | int(resp[pos+7])
 
-		hasPVolTag := util.FlagToBool(resp[pos+1], 7)
-		hasAVolTag := util.FlagToBool(resp[pos+1], 6)
+		hasPVolTag := flagToBool(resp[pos+1], 7)
+		hasAVolTag := flagToBool(resp[pos+1], 6)
 
 		if hasAVolTag {
 			return nil, errors.New("received Alternative Volume Tag, which is not supported")
@@ -62,4 +61,15 @@ func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, c
 	}
 
 	return elementStatuses, nil
+}
+
+func boolToFlag(val bool, pos uint8) uint8 {
+	if val {
+		return 1 << pos
+	}
+	return 0
+}
+
+func flagToBool(flag uint8, pos uint8) bool {
+	return (flag & (1 << pos)) != 0
 }
