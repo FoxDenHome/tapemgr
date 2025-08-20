@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/FoxDenHome/tapemgr/storage/encryption"
+	"github.com/FoxDenHome/tapemgr/storage/encryption/mapper"
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
@@ -16,7 +17,7 @@ var tapeFileKey = flag.String("tape-file-key", "tapes/file.key", "Path to the ta
 var tapePathKey = flag.String("tape-path-key", "tapes/path.key", "Path to the tape path key")
 var cmdMode = flag.String("mode", "help", "Mode to run in (inventory, statistics, store, copyback)")
 
-var mapper *encryption.MappedCryptor
+var encMapper *mapper.MappedCryptor
 var inv *inventory.Inventory
 
 func main() {
@@ -49,7 +50,7 @@ func main() {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
 
-	mapper, err = encryption.NewMappedCryptor(fileCryptor, nameCryptor, inv, "/", *tapeMount)
+	encMapper, err = mapper.New(fileCryptor, nameCryptor, inv, "/", *tapeMount)
 	if err != nil {
 		log.Fatalf("Failed to create mapper: %v", err)
 	}
@@ -66,7 +67,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to store %v: %v", target, err)
 			}
-			err = mapper.TombstonePath(target)
+			err = encMapper.TombstonePath(target)
 			if err != nil {
 				log.Fatalf("Failed to create tombstones for %v: %v", target, err)
 			}
@@ -99,7 +100,7 @@ func storeRecursive(target string) error {
 			}
 		}
 	} else {
-		err := mapper.Encrypt(target)
+		err := encMapper.Encrypt(target)
 		if err != nil {
 			return err
 		}

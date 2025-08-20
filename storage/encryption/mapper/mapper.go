@@ -1,4 +1,4 @@
-package encryption
+package mapper
 
 import (
 	"fmt"
@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/FoxDenHome/tapemgr/storage/encryption"
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
 type MappedCryptor struct {
-	file            *FileCryptor
-	path            *PathCryptor
+	file            *encryption.FileCryptor
+	path            *encryption.PathCryptor
 	inventory       *inventory.Inventory
 	sourcePrefix    string
 	encryptedPrefix string
@@ -20,7 +21,7 @@ type MappedCryptor struct {
 	handledFiles map[string]bool
 }
 
-func NewMappedCryptor(file *FileCryptor, path *PathCryptor, inventory *inventory.Inventory, sourcePrefix, encryptedPrefix string) (*MappedCryptor, error) {
+func New(file *encryption.FileCryptor, path *encryption.PathCryptor, inventory *inventory.Inventory, sourcePrefix, encryptedPrefix string) (*MappedCryptor, error) {
 	if !filepath.IsAbs(sourcePrefix) {
 		return nil, fmt.Errorf("source prefix %s is not absolute", sourcePrefix)
 	}
