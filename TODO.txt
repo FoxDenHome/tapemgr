@@ -1,0 +1,9 @@
+- Store
+    - Actually load/mount tapes
+    - Format a new tape (generate next barcode in line) if old tape full
+    - Unload tapes after done
+    - Inventory newly created tape
+
+- Commands
+    - inventory tape by barcode
+    - load/mount tape by barcode
