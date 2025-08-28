@@ -27,9 +27,7 @@ func (m *FileMapper) loadForSize(size int64) error {
 		}
 	}
 
-	tapes := m.inventory.GetTapes()
-
-	for _, tape := range tapes {
+	for _, tape := range m.inventory.GetTapesSortByFreeDesc() {
 		if tape.Free >= size+TAPE_SIZE_NEW_SPARE {
 			return m.loadAndMount(tape)
 		}
@@ -40,8 +38,9 @@ func (m *FileMapper) loadForSize(size int64) error {
 		return fmt.Errorf("failed to get volume tags: %v", err)
 	}
 
+	tapeMap := m.inventory.GetTapes()
 	for _, barcode := range volumeTags {
-		if tapes[barcode] == nil {
+		if tapeMap[barcode] == nil {
 			// Found unused new tape!
 			return m.formatTapeKeepMounted(barcode)
 		}

@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -68,6 +69,17 @@ func (i *Inventory) GetOrCreateTape(barcode string) *Tape {
 
 func (i *Inventory) GetTapes() map[string]*Tape {
 	return i.tapes
+}
+
+func (i *Inventory) GetTapesSortByFreeDesc() []*Tape {
+	tapes := make([]*Tape, 0, len(i.tapes))
+	for _, tape := range i.tapes {
+		tapes = append(tapes, tape)
+	}
+	slices.SortFunc(tapes, func(a, b *Tape) int {
+		return int(b.Free) - int(a.Free)
+	})
+	return tapes
 }
 
 func (i *Inventory) Save() error {

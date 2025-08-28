@@ -1,2 +1,3 @@
 - Commands
-    - copyback which uses user.ltfs.partition and user.ltfs.startblock (like ltfs_ordered_copy)
+    - restore-tape which uses user.ltfs.partition and user.ltfs.startblock (like ltfs_ordered_copy)
+    - restore-file which grabs the best version of the file(s) and restores those
