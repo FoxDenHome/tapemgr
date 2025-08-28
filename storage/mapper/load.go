@@ -43,10 +43,7 @@ func (m *FileMapper) loadForSize(size int64) error {
 	for _, barcode := range volumeTags {
 		if tapes[barcode] == nil {
 			// Found unused new tape!
-			err = m.formatTapeKeepMounted(barcode)
-			if err != nil {
-				return fmt.Errorf("failed to format tape %s: %v", barcode, err)
-			}
+			return m.formatTapeKeepMounted(barcode)
 		}
 	}
 
