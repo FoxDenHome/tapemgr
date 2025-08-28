@@ -51,17 +51,22 @@ func (i *Inventory) Reload() error {
 	return nil
 }
 
-func (i *Inventory) AddTape(tape *Tape) error {
-	if tape == nil || tape.Barcode == "" {
-		return nil
+func (i *Inventory) NewTape(barcode string) *Tape {
+	tape := &Tape{
+		inventory: i,
+		Barcode:   barcode,
+		Files:     make(map[string]*FileInfo),
 	}
-	tape.inventory = i
-	i.tapes[tape.Barcode] = tape
-	return tape.Save()
+	i.tapes[barcode] = tape
+	return tape
 }
 
 func (i *Inventory) Save() error {
 	for _, tape := range i.tapes {
+		if tape.Size == 0 {
+			continue
+		}
+
 		if err := tape.Save(); err != nil {
 			return err
 		}

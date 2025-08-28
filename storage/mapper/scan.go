@@ -1,7 +1,6 @@
 package mapper
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -9,7 +8,7 @@ func (m *FileMapper) ScanTape(barcode string) error {
 	tapes := m.inventory.GetTapes()
 	tape := tapes[barcode]
 	if tape == nil {
-		return fmt.Errorf("tape %s not found", barcode)
+		tape = m.inventory.NewTape(barcode)
 	}
 
 	err := m.loadAndMount(tape)
