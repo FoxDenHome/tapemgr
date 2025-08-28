@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/FoxDenHome/tapemgr/scsi"
 )
@@ -19,6 +20,7 @@ type TapeDrive struct {
 	GenericPath string
 
 	mountPoint string
+	mountWait  sync.WaitGroup
 	mountProc  *exec.Cmd
 }
 

@@ -145,7 +145,3 @@ func (t *Tape) Save() error {
 	enc.SetIndent("", "    ")
 	return enc.Encode(t)
 }
-
-func (i *Inventory) GetTapes() map[string]*Tape {
-	return i.tapes
-}

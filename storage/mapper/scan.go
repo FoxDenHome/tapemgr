@@ -5,25 +5,25 @@ import (
 )
 
 func (m *FileMapper) ScanTape(barcode string) error {
-	tapes := m.inventory.GetTapes()
-	tape := tapes[barcode]
-	if tape == nil {
-		tape = m.inventory.NewTape(barcode)
-	}
+	tape := m.inventory.GetOrCreateTape(barcode)
 
 	err := m.loadAndMount(tape)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Re-inventorying tape %s", barcode)
-	defer log.Printf("Finished re-inventorying tape %s", barcode)
+	defer func() {
+		_ = m.drive.Unmount()
+	}()
+	return m.scanCurrentTape()
+}
+
+func (m *FileMapper) scanCurrentTape() error {
+	log.Printf("Re-inventorying tape %s", m.currentTape.Barcode)
+	defer log.Printf("Finished re-inventorying tape %s", m.currentTape.Barcode)
 	if DryRun {
 		return nil
 	}
 
-	defer func() {
-		_ = m.drive.Unmount()
-	}()
-	return tape.LoadFrom(m.drive)
+	return m.currentTape.LoadFrom(m.drive)
 }

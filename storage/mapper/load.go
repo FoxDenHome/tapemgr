@@ -27,16 +27,33 @@ func (m *FileMapper) loadForSize(size int64) error {
 		}
 	}
 
-	for _, tape := range m.inventory.GetTapes() {
+	tapes := m.inventory.GetTapes()
+
+	for _, tape := range tapes {
 		if tape.Free >= size+TAPE_SIZE_NEW_SPARE {
 			return m.loadAndMount(tape)
+		}
+	}
+
+	volumeTags, err := m.loader.GetVolumeTags()
+	if err != nil {
+		return fmt.Errorf("failed to get volume tags: %v", err)
+	}
+
+	for _, barcode := range volumeTags {
+		if tapes[barcode] == nil {
+			// Found unused new tape!
+			err = m.formatTapeKeepMounted(barcode)
+			if err != nil {
+				return fmt.Errorf("failed to format tape %s: %v", barcode, err)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (m *FileMapper) loadAndMount(tape *inventory.Tape) error {
+func (m *FileMapper) loadTape(tape *inventory.Tape) error {
 	if m.currentTape != nil && m.currentTape.Barcode == tape.Barcode {
 		return nil
 	}
@@ -57,29 +74,28 @@ func (m *FileMapper) loadAndMount(tape *inventory.Tape) error {
 	if err != nil {
 		return fmt.Errorf("failed to move tape %s: %v", tape.Barcode, err)
 	}
-	err = m.drive.Mount()
-	if err != nil {
-		return fmt.Errorf("failed to mount tape %s in drive: %v", tape.Barcode, err)
-	}
 
 	m.currentTape = tape
 	return nil
 }
 
-func (m *FileMapper) UnmountAndUnload() error {
-	m.currentTape = nil
+func (m *FileMapper) loadAndMount(tape *inventory.Tape) error {
+	if m.currentTape != nil && m.currentTape.Barcode == tape.Barcode {
+		return nil
+	}
+
+	err := m.loadTape(tape)
+	if err != nil {
+		return err
+	}
+
 	if DryRun {
 		return nil
 	}
 
-	err := m.drive.Unmount()
+	err = m.drive.Mount()
 	if err != nil {
-		return fmt.Errorf("unmounting drive: %w", err)
-	}
-
-	err = m.loader.MoveDriveTapeToStorage(m.loaderDriveAddress)
-	if err != nil {
-		return fmt.Errorf("moving tape from drive %d to storage: %w", m.loaderDriveAddress, err)
+		return fmt.Errorf("failed to mount tape %s in drive: %v", tape.Barcode, err)
 	}
 
 	return nil

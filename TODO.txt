@@ -1,8 +1,2 @@
-- Store
-    - Format a new tape (generate next barcode in line) if old tape full
-
 - Commands
-    - statistics
     - copyback which uses user.ltfs.partition and user.ltfs.startblock (like ltfs_ordered_copy)
-    - load/mount tape by barcode
-    - format tape by barcode

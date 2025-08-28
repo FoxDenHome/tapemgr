@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
@@ -11,6 +12,7 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/encryption"
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 	"github.com/FoxDenHome/tapemgr/storage/mapper"
+	"github.com/FoxDenHome/tapemgr/util"
 )
 
 var loaderDeviceStr = flag.String("loader-device", "/dev/sch0", "Path to the SCSI tape loader device")
@@ -21,14 +23,14 @@ var tapePathKey = flag.String("tape-path-key", "tapes/path.key", "Path to the ta
 var cmdMode = flag.String("mode", "help", "Mode to run in (inventory, statistics, store, copyback)")
 var dryRun = flag.Bool("dry-run", false, "Dry run mode (do not perform any write operations)")
 
-var encMapper *mapper.FileMapper
+var fileMapper *mapper.FileMapper
 var inv *inventory.Inventory
 
 func main() {
 	flag.Parse()
 	mapper.DryRun = *dryRun
 
-	log.Printf("Hello from tapemgr!")
+	log.Printf("tapemgr starting up")
 
 	identity, err := os.ReadFile(*tapeFileKey)
 	if err != nil {
@@ -65,10 +67,12 @@ func main() {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
 
-	encMapper, err = mapper.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice, "/")
+	fileMapper, err = mapper.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice, "/")
 	if err != nil {
 		log.Fatalf("Failed to create mapper: %v", err)
 	}
+
+	log.Printf("tapemgr startup done, parsing command")
 
 	switch strings.ToLower(*cmdMode) {
 	case "scan":
@@ -79,30 +83,77 @@ func main() {
 			log.Fatalf("No barcode provided for scan")
 		}
 
-		err := encMapper.ScanTape(barcode)
+		err := fileMapper.ScanTape(barcode)
 		if err != nil {
 			log.Fatalf("Failed to scan tape %s: %v", barcode, err)
 		}
+
 	case "statistics":
-		log.Printf("Statistics TODO")
+		tapesMap := inv.GetTapes()
+		tapes := make([]*inventory.Tape, 0, len(tapesMap))
+		for _, tape := range tapesMap {
+			tapes = append(tapes, tape)
+		}
+		slices.SortFunc(tapes, func(a, b *inventory.Tape) int {
+			return int(a.Free) - int(b.Free)
+		})
+
+		for _, tape := range tapes {
+			log.Printf(
+				"Tape: %s, Free: %s / %s (%d%% full)",
+				tape.Barcode,
+				util.FormatSize(tape.Free),
+				util.FormatSize(tape.Size),
+				(100*(tape.Size-tape.Free))/tape.Size,
+			)
+		}
+
 	case "store":
 		defer putLibraryToIdle()
 
 		targets := flag.Args()
 		for _, target := range targets {
-			err = encMapper.EncryptRecursive(target)
+			err = fileMapper.EncryptRecursive(target)
 			if err != nil {
 				log.Fatalf("Failed to store %v: %v", target, err)
 			}
-			err = encMapper.TombstonePath(target)
+			err = fileMapper.TombstonePath(target)
 			if err != nil {
 				log.Fatalf("Failed to create tombstones for %v: %v", target, err)
 			}
 		}
+
+	case "mount":
+		defer putLibraryToIdle()
+
+		barcode := flag.Arg(0)
+		if barcode == "" {
+			log.Fatalf("No barcode provided for scan")
+		}
+
+		err := fileMapper.MountTapeWait(barcode)
+		if err != nil {
+			log.Fatalf("Failed to mount tape %s: %v", barcode, err)
+		}
+
+	case "format":
+		defer putLibraryToIdle()
+
+		barcode := flag.Arg(0)
+		if barcode == "" {
+			log.Fatalf("No barcode provided for format")
+		}
+
+		err := fileMapper.FormatTape(barcode)
+		if err != nil {
+			log.Fatalf("Failed to format tape %s: %v", barcode, err)
+		}
+
 	case "copyback":
 		defer putLibraryToIdle()
 
 		log.Printf("Copyback TODO")
+
 	case "help":
 		flag.Usage()
 	default:
@@ -112,7 +163,7 @@ func main() {
 }
 
 func putLibraryToIdle() {
-	err := encMapper.UnmountAndUnload()
+	err := fileMapper.UnmountAndUnload()
 	if err != nil {
 		log.Printf("Error unmounting and unloading tape: %v", err)
 	}

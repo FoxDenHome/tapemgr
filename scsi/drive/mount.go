@@ -26,8 +26,10 @@ func (d *TapeDrive) Mount() error {
 		return err
 	}
 
+	d.mountWait.Add(1)
 	go func() {
 		_ = d.mountProc.Wait()
+		d.mountWait.Done()
 	}()
 
 	for {
@@ -63,6 +65,10 @@ func (d *TapeDrive) Unmount() (err error) {
 
 	_ = proc.Wait()
 	return nil
+}
+
+func (d *TapeDrive) WaitForUnmount() {
+	d.mountWait.Wait()
 }
 
 func (d *TapeDrive) mountProcAlive() bool {
