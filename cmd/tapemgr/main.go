@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
@@ -91,7 +90,7 @@ func main() {
 
 		targets := flag.Args()
 		for _, target := range targets {
-			err = storeRecursive(target)
+			err = encMapper.EncryptRecursive(target)
 			if err != nil {
 				log.Fatalf("Failed to store %v: %v", target, err)
 			}
@@ -110,33 +109,6 @@ func main() {
 		log.Printf("Unknown mode: %v", *cmdMode)
 		flag.Usage()
 	}
-}
-
-func storeRecursive(target string) error {
-	info, err := os.Stat(target)
-	if err != nil {
-		return err
-	}
-
-	if info.IsDir() {
-		entries, err := os.ReadDir(target)
-		if err != nil {
-			return err
-		}
-		for _, entry := range entries {
-			err = storeRecursive(filepath.Join(target, entry.Name()))
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		err = encMapper.Encrypt(target)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func putLibraryToIdle() {
