@@ -60,8 +60,15 @@ func (l *TapeLoader) MoveTapeToDrive(driveAddress uint16, volumeTag string) erro
 	for _, elem := range elements {
 		if elem.VolumeTag == volumeTag {
 			if elem.Address == driveAddress {
+				log.Printf("tape %s already in drive %d", volumeTag, driveAddress)
 				return nil
 			}
+
+			err = l.moveDriveTapeToStorage(driveAddress, dev)
+			if err != nil {
+				return fmt.Errorf("failed to move previous tape from drive %d to storage: %v", driveAddress, err)
+			}
+
 			log.Printf("moving tape %s from address %d to drive %d", volumeTag, elem.Address, driveAddress)
 			return dev.MoveMedium(elem.Address, driveAddress, scsi.MOVE_OPTION_NORMAL)
 		}
@@ -79,6 +86,10 @@ func (l *TapeLoader) MoveDriveTapeToStorage(driveAddress uint16) error {
 		_ = dev.Close()
 	}()
 
+	return l.moveDriveTapeToStorage(driveAddress, dev)
+}
+
+func (l *TapeLoader) moveDriveTapeToStorage(driveAddress uint16, dev *scsi.SCSIDevice) error {
 	elements, err := dev.ReadElementStatus(element.ELEMENT_TYPE_DATA_TRANSFER, driveAddress, 1, true, false, false)
 	if err != nil {
 		return err
@@ -88,6 +99,15 @@ func (l *TapeLoader) MoveDriveTapeToStorage(driveAddress uint16) error {
 		return fmt.Errorf("expected 1 data transfer element, got %d", len(elements))
 	}
 
+	if elements[0].Address != driveAddress {
+		return fmt.Errorf("expected data transfer element with address %d, got %d", driveAddress, elements[0].Address)
+	}
+
+	if !elements[0].HasFlag(element.FLAG_FULL) {
+		// Drive is currently empty
+		return nil
+	}
+
 	sourceAddr := elements[0].SourceElementAddress
 	if sourceAddr != 0 {
 		elements, err = dev.ReadElementStatus(element.ELEMENT_TYPE_STORAGE, sourceAddr, 1, true, false, false)
@@ -95,7 +115,7 @@ func (l *TapeLoader) MoveDriveTapeToStorage(driveAddress uint16) error {
 			return err
 		}
 
-		if len(elements) == 1 && !elements[0].HasFlag(element.FLAG_FULL) {
+		if len(elements) == 1 && elements[0].Address == sourceAddr && !elements[0].HasFlag(element.FLAG_FULL) {
 			log.Printf("Moving tape from drive %d back to source %d", driveAddress, sourceAddr)
 			return dev.MoveMedium(driveAddress, sourceAddr, scsi.MOVE_OPTION_NORMAL)
 		}
