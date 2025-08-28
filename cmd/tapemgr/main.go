@@ -108,13 +108,13 @@ func storeRecursive(target string) error {
 			return err
 		}
 		for _, entry := range entries {
-			err := storeRecursive(filepath.Join(target, entry.Name()))
+			err = storeRecursive(filepath.Join(target, entry.Name()))
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		err := encMapper.Encrypt(target)
+		err = encMapper.Encrypt(target)
 		if err != nil {
 			return err
 		}

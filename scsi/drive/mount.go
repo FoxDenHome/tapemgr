@@ -17,11 +17,6 @@ func (d *TapeDrive) Mount() error {
 		return err
 	}
 
-	err = d.Load()
-	if err != nil {
-		return err
-	}
-
 	d.mountProc = exec.Command("ltfs", "-o", "devname="+d.GenericPath, "-f", "-o", "umask=077", "-o", "eject", "-o", "sync_type=unmount", d.mountPoint)
 	d.mountProc.Stdout = os.Stdout
 	d.mountProc.Stderr = os.Stderr
@@ -30,6 +25,10 @@ func (d *TapeDrive) Mount() error {
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		_ = d.mountProc.Wait()
+	}()
 
 	for {
 		if !d.mountProcAlive() {
@@ -67,7 +66,7 @@ func (d *TapeDrive) Unmount() (err error) {
 }
 
 func (d *TapeDrive) mountProcAlive() bool {
-	return syscall.Kill(d.mountProc.Process.Pid, 0) == nil
+	return d.mountProc.ProcessState == nil
 }
 
 func (d *TapeDrive) isMounted() bool {

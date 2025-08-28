@@ -55,42 +55,6 @@ func (d *TapeDrive) SerialNumber() (string, error) {
 	return dev.SerialNumber()
 }
 
-func (d *TapeDrive) Load() error {
-	return d.loadUnload(scsi.LOAD_AND_THREAD)
-}
-
-func (d *TapeDrive) Unload() error {
-	return d.loadUnload(scsi.UNLOAD_ARCHIVE)
-}
-
 func (d *TapeDrive) MountPoint() string {
 	return d.mountPoint
-}
-
-func (d *TapeDrive) loadUnload(op scsi.LoadUnloadOperation) error {
-	if d.isMounted() {
-		return ErrAlreadyMounted
-	}
-
-	dev, err := scsi.Open(d.DevicePath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = dev.Close()
-	}()
-
-	err = dev.WaitForReady()
-	if err != nil {
-		return err
-	}
-	err = dev.LoadUnload(op)
-	if err != nil {
-		return err
-	}
-	err = dev.WaitForReady()
-	if err != nil {
-		return err
-	}
-	return nil
 }

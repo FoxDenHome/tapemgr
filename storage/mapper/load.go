@@ -1,6 +1,9 @@
 package mapper
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 const (
 	TAPE_SIZE_SPARE     = 1024 * 1024 * 1024 // 1 GB
@@ -14,20 +17,24 @@ func (m *FileMapper) loadTapeForSize(size int64) error {
 		return nil
 	}
 
-	err := m.drive.Unmount()
-	if err != nil {
-		return fmt.Errorf("failed to unmount drive: %v", err)
+	var err error
+	if !DryRun {
+		err = m.drive.Unmount()
+		if err != nil {
+			return fmt.Errorf("failed to unmount drive: %v", err)
+		}
 	}
 
 	for _, tape := range m.inventory.GetTapes() {
 		if tape.Free >= size+TAPE_SIZE_NEW_SPARE {
+			log.Printf("[LOAD] Loading tape %s to drive %d", tape.Barcode, m.loaderDriveAddress)
+			if DryRun {
+				return nil
+			}
+
 			err = m.loader.MoveTapeToDrive(m.loaderDriveAddress, tape.Barcode)
 			if err != nil {
 				return fmt.Errorf("failed to move tape %s: %v", tape.Barcode, err)
-			}
-			err = m.drive.Load()
-			if err != nil {
-				return fmt.Errorf("failed to load tape %s into drive: %v", tape.Barcode, err)
 			}
 			err = m.drive.Mount()
 			if err != nil {

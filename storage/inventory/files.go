@@ -4,9 +4,7 @@ import "time"
 
 type FileInfo struct {
 	ModifiedTime time.Time `json:"modified_time"`
-	Partition    string    `json:"partition"`
 	Size         int64     `json:"size"`
-	StartBlock   int64     `json:"start_block"`
 
 	tape *Tape
 	name string

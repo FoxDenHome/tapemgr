@@ -13,6 +13,8 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
+var DryRun = true
+
 type FileMapper struct {
 	file *encryption.FileCryptor
 	path *encryption.PathCryptor
@@ -111,15 +113,17 @@ func (m *FileMapper) TombstonePath(path string) error {
 
 		newFiles = append(newFiles, encryptedPath)
 
-		tombPath := filepath.Join(m.encryptedPrefix, encryptedPath)
-		tombDir := filepath.Dir(tombPath)
-		err = os.MkdirAll(tombDir, 0o755)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(tombPath, []byte{}, 0o644)
-		if err != nil {
-			return err
+		if !DryRun {
+			tombPath := filepath.Join(m.encryptedPrefix, encryptedPath)
+			tombDir := filepath.Dir(tombPath)
+			err = os.MkdirAll(tombDir, 0o755)
+			if err != nil {
+				return err
+			}
+			err = os.WriteFile(tombPath, []byte{}, 0o644)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -165,14 +169,18 @@ func (m *FileMapper) Encrypt(path string) error {
 		return err
 	}
 
-	err = m.file.EncryptMkdirAll(path, encryptedPath)
-	if err != nil {
-		_ = os.Remove(encryptedPath)
-		_ = m.currentTape.ReloadStats(m.drive)
-		return err
+	if !DryRun {
+		err = m.file.EncryptMkdirAll(path, encryptedPath)
+		if err != nil {
+			_ = os.Remove(encryptedPath)
+			_ = m.currentTape.ReloadStats(m.drive)
+			return err
+		}
+
+		return m.currentTape.AddFiles(m.drive, encryptedRelPath)
 	}
 
-	return m.currentTape.AddFiles(m.drive, encryptedRelPath)
+	return nil
 }
 
 func (m *FileMapper) Decrypt(path string) error {

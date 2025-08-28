@@ -10,11 +10,6 @@ func (d *TapeDrive) Format(barcode string) error {
 		return ErrAlreadyMounted
 	}
 
-	err := d.Load()
-	if err != nil {
-		return err
-	}
-
 	serial := barcode[:6]
 
 	cmd := exec.Command("mkltfs", "--device", d.DevicePath, "-n", barcode, "-s", serial, "-f")

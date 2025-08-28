@@ -4,12 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
 	"golang.org/x/sys/unix"
-
-	"github.com/pkg/xattr"
 )
 
 func LoadFromFile(filename string) (*Tape, error) {
@@ -90,28 +87,12 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	partitionXattr, err := xattr.Get(filepath.Join(mountPoint, path), "user.ltfs.partition")
-	if err != nil {
-		return err
-	}
-	startBlockXattr, err := xattr.Get(filepath.Join(mountPoint, path), "user.ltfs.startblock")
-	if err != nil {
-		return err
-	}
-	startBlockNum, err := strconv.ParseInt(string(startBlockXattr), 10, 64)
-	if err != nil {
-		return err
-	}
-
 	info := &FileInfo{
 		tape: t,
 		name: path,
 
 		Size:         stat.Size(),
 		ModifiedTime: stat.ModTime(),
-
-		Partition:  string(partitionXattr),
-		StartBlock: startBlockNum,
 	}
 	t.Files[path] = info
 
