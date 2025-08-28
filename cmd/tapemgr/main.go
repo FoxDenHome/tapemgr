@@ -23,20 +23,20 @@ var cmdMode = flag.String("mode", "help", "Mode to run in (inventory, statistics
 
 var encMapper *mapper.FileMapper
 var inv *inventory.Inventory
+var driveDevice *drive.TapeDrive
 
 func main() {
 	flag.Parse()
 
 	log.Printf("Hello from tapemgr!")
-
-	driveDevice, err := drive.NewTapeDrive(*driveDeviceStr, *tapeMount)
-	if err != nil {
-		log.Fatalf("Failed to create tape drive: %v", err)
-	}
-
 	loaderDevice, err := loader.NewTapeLoader(*loaderDeviceStr)
 	if err != nil {
 		log.Fatalf("Failed to create tape loader: %v", err)
+	}
+
+	driveDevice, err = drive.NewTapeDrive(*driveDeviceStr, *tapeMount)
+	if err != nil {
+		log.Fatalf("Failed to create tape drive: %v", err)
 	}
 
 	identity, err := os.ReadFile(*tapeFileKey)
@@ -70,11 +70,23 @@ func main() {
 	}
 
 	switch strings.ToLower(*cmdMode) {
-	case "inventory":
-		log.Printf("Inventory loaded with %v", inv.GetBestFilesOn("P0003SL6"))
+	case "scan":
+		defer putLibraryToIdle()
+
+		barcode := flag.Arg(0)
+		if barcode == "" {
+			log.Fatalf("No barcode provided for scan")
+		}
+
+		err := encMapper.ScanTape(barcode)
+		if err != nil {
+			log.Fatalf("Failed to scan tape %s: %v", barcode, err)
+		}
 	case "statistics":
 		log.Printf("Statistics TODO")
 	case "store":
+		defer putLibraryToIdle()
+
 		targets := flag.Args()
 		for _, target := range targets {
 			err = storeRecursive(target)
@@ -87,6 +99,8 @@ func main() {
 			}
 		}
 	case "copyback":
+		defer putLibraryToIdle()
+
 		log.Printf("Copyback TODO")
 	case "help":
 		flag.Usage()
@@ -121,4 +135,13 @@ func storeRecursive(target string) error {
 	}
 
 	return nil
+}
+
+func putLibraryToIdle() {
+	if mapper.DryRun {
+		return
+	}
+
+	_ = driveDevice.Unmount()
+	// TODO: Store tape back into magazine
 }

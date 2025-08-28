@@ -13,7 +13,7 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
-var DryRun = true
+var DryRun = false
 
 type FileMapper struct {
 	file *encryption.FileCryptor
@@ -87,7 +87,7 @@ func (m *FileMapper) TombstonePath(path string) error {
 		return err
 	}
 
-	err = m.loadTapeForSize(TOMBSTONE_SIZE_SPARE)
+	err = m.loadForSize(TOMBSTONE_SIZE_SPARE)
 	if err != nil {
 		return err
 	}
@@ -127,6 +127,10 @@ func (m *FileMapper) TombstonePath(path string) error {
 		}
 	}
 
+	if DryRun {
+		return nil
+	}
+
 	return m.currentTape.AddFiles(m.drive, newFiles...)
 }
 
@@ -164,7 +168,7 @@ func (m *FileMapper) Encrypt(path string) error {
 	encryptedPath := filepath.Join(m.encryptedPrefix, encryptedRelPath)
 	log.Printf("[STOR] %s", path)
 
-	err = m.loadTapeForSize(candidateInfo.Size())
+	err = m.loadForSize(candidateInfo.Size())
 	if err != nil {
 		return err
 	}

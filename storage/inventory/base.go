@@ -1,13 +1,13 @@
 package inventory
 
 import (
-	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
 type Tape struct {
+	inventory *Inventory
+
 	Barcode string               `json:"barcode"`
 	Files   map[string]*FileInfo `json:"files"`
 	Size    int64                `json:"size"`
@@ -42,7 +42,7 @@ func (i *Inventory) Reload() error {
 		if !strings.HasSuffix(name, ".json") {
 			continue
 		}
-		tape, err := LoadFromFile(filepath.Join(i.path, name))
+		tape, err := LoadFromFile(i, name)
 		if err != nil {
 			return err
 		}
@@ -55,31 +55,16 @@ func (i *Inventory) AddTape(tape *Tape) error {
 	if tape == nil || tape.Barcode == "" {
 		return nil
 	}
+	tape.inventory = i
 	i.tapes[tape.Barcode] = tape
-	return i.SaveTape(tape.Barcode)
+	return tape.Save()
 }
 
 func (i *Inventory) Save() error {
-	for barcode := range i.tapes {
-		if err := i.SaveTape(barcode); err != nil {
+	for _, tape := range i.tapes {
+		if err := tape.Save(); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (i *Inventory) SaveTape(barcode string) error {
-	tape, ok := i.tapes[barcode]
-	if !ok {
-		return nil // Tape not found, nothing to save
-	}
-
-	fh, err := os.Create(filepath.Join(i.path, barcode+".json"))
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	enc := json.NewEncoder(fh)
-	return enc.Encode(tape)
 }

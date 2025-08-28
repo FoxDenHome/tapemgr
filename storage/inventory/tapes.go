@@ -9,14 +9,16 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func LoadFromFile(filename string) (*Tape, error) {
-	fh, err := os.Open(filename)
+func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
+	fh, err := os.Open(filepath.Join(inv.path, filename))
 	if err != nil {
 		return nil, err
 	}
 	defer fh.Close()
 
-	tape := &Tape{}
+	tape := &Tape{
+		inventory: inv,
+	}
 	dec := json.NewDecoder(fh)
 	err = dec.Decode(tape)
 	if err != nil {
@@ -57,15 +59,21 @@ func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
 
 func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
 	t.Files = make(map[string]*FileInfo)
-	err := t.ReloadStats(drive)
+	err := t.reloadStats(drive)
 	if err != nil {
 		return err
 	}
-	return t.addDir(drive, "/")
+
+	err = t.addDir(drive, "/")
+	if err != nil {
+		return err
+	}
+
+	return t.Save()
 }
 
 func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
-	err := t.ReloadStats(drive)
+	err := t.reloadStats(drive)
 	if err != nil {
 		return err
 	}
@@ -76,7 +84,8 @@ func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 			return err
 		}
 	}
-	return nil
+
+	return t.Save()
 }
 
 func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
@@ -87,19 +96,27 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	info := &FileInfo{
+	t.Files[path] = &FileInfo{
 		tape: t,
 		name: path,
 
 		Size:         stat.Size(),
 		ModifiedTime: stat.ModTime(),
 	}
-	t.Files[path] = info
 
 	return nil
 }
 
 func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
+	err := t.reloadStats(drive)
+	if err != nil {
+		return err
+	}
+
+	return t.Save()
+}
+
+func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
 	var stat unix.Statfs_t
 	err := unix.Statfs(drive.MountPoint(), &stat)
 	if err != nil {
@@ -110,6 +127,17 @@ func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
 	t.Free = int64(stat.Bfree) * int64(stat.Bsize)
 
 	return nil
+}
+
+func (t *Tape) Save() error {
+	fh, err := os.Create(filepath.Join(t.inventory.path, t.Barcode+".json"))
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	enc := json.NewEncoder(fh)
+	return enc.Encode(t)
 }
 
 func (i *Inventory) GetTapes() map[string]*Tape {
