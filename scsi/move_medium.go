@@ -1,6 +1,10 @@
 package scsi
 
-import "time"
+import (
+	"time"
+
+	scsidefs "github.com/FoxDenHome/goscsi/godefs/scsi"
+)
 
 type MoveOption uint8
 
@@ -12,7 +16,7 @@ const (
 
 func (d *SCSIDevice) MoveMedium(sourceAddress uint16, destAddress uint16, moveOption MoveOption) error {
 	_, err := d.requestWithTimeout([]byte{
-		MOVE_MEDIUM,
+		scsidefs.MOVE_MEDIUM,
 		0x00,
 		0x00, 0x00, // Transport element address, no library seems to care about this and auto-select the arm instead
 		uint8(sourceAddress >> 8), uint8(sourceAddress & 0xFF),

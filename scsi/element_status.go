@@ -3,6 +3,7 @@ package scsi
 import (
 	"errors"
 
+	scsidefs "github.com/FoxDenHome/goscsi/godefs/scsi"
 	"github.com/FoxDenHome/tapemgr/scsi/element"
 )
 
@@ -18,7 +19,7 @@ func (d *SCSIDevice) ReadElementStatus(elementType element.Type, start uint16, c
 	reservedRespLen := (perElementLen * int(count)) + (8 * element.ElementTypes) + 8
 
 	resp, err := d.request([]byte{
-		READ_ELEMENT_STATUS,
+		scsidefs.READ_ELEMENT_STATUS,
 		boolToFlag(readVolumeTag, 4) | uint8(elementType),
 		uint8(start >> 8), uint8(start & 0xFF),
 		uint8(count >> 8), uint8(count & 0xFF),

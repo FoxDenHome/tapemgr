@@ -1,8 +1,12 @@
 package scsi
 
+import (
+	scsidefs "github.com/FoxDenHome/goscsi/godefs/scsi"
+)
+
 func (d *SCSIDevice) TestUnitReady() (bool, error) {
 	resp, err := d.request([]byte{
-		TEST_UNIT_READY, 0x00, 0x00, 0x00, 0x00, 0x00,
+		scsidefs.TEST_UNIT_READY, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}, 6)
 	if err != nil {
 		return false, err
