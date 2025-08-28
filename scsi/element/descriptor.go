@@ -13,6 +13,7 @@ const (
 type MediumType uint8
 type CodeSet uint8
 type IdentifierType uint8
+type Flag uint16
 
 const (
 	IDENTIFIER_TYPE_VENDOR IdentifierType = 0x00
@@ -20,18 +21,18 @@ const (
 	CODE_SET_UNDEFINED CodeSet = 0x00
 	CODE_SET_ASCII     CodeSet = 0x02
 
-	FLAG_FULL           = 1 << 0
-	FLAG_IMPORT_EXPORT  = 1 << 1
-	FLAG_EXCEPTION      = 1 << 2
-	FLAG_ACCESS         = 1 << 3
-	FLAG_EXPORT_ENABLED = 1 << 4
-	FLAG_IMPORT_ENABLED = 1 << 5
-	FLAG_CMC            = 1 << 6
-	FLAG_OIR            = 1 << 7
+	FLAG_FULL           Flag = 1 << 0
+	FLAG_IMPORT_EXPORT  Flag = 1 << 1
+	FLAG_EXCEPTION      Flag = 1 << 2
+	FLAG_ACCESS         Flag = 1 << 3
+	FLAG_EXPORT_ENABLED Flag = 1 << 4
+	FLAG_IMPORT_ENABLED Flag = 1 << 5
+	FLAG_CMC            Flag = 1 << 6
+	FLAG_OIR            Flag = 1 << 7
 
-	FLAG_ED                  = 1 << (8 + 3)
-	FLAG_INVERT              = 1 << (8 + 6)
-	FLAG_SOURCE_INVERT_VALID = 1 << (8 + 7)
+	FLAG_ED                  Flag = 1 << (8 + 3)
+	FLAG_INVERT              Flag = 1 << (8 + 6)
+	FLAG_SOURCE_INVERT_VALID Flag = 1 << (8 + 7)
 )
 
 type Descriptor struct {
@@ -83,4 +84,8 @@ func ParseDescriptor(elementType Type, hasPVolTag bool, data []byte) (*Descripto
 	}
 
 	return baseDesc, nil
+}
+
+func (d *Descriptor) HasFlag(flag Flag) bool {
+	return d.Flags&uint16(flag) != 0
 }

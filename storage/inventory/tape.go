@@ -96,6 +96,10 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
+	if path[0] == '/' {
+		path = path[1:]
+	}
+
 	t.Files[path] = &FileInfo{
 		tape: t,
 		name: path,
@@ -137,6 +141,8 @@ func (t *Tape) Save() error {
 	defer fh.Close()
 
 	enc := json.NewEncoder(fh)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "    ")
 	return enc.Encode(t)
 }
 

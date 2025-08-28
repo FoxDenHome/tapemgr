@@ -16,7 +16,8 @@ func (m *FileMapper) ScanTape(barcode string) error {
 		return err
 	}
 
-	log.Printf("[SCAN] Re-inventorying tape %s", barcode)
+	log.Printf("Re-inventorying tape %s", barcode)
+	defer log.Printf("Finished re-inventorying tape %s", barcode)
 	if DryRun {
 		return nil
 	}

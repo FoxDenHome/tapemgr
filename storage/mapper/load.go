@@ -41,7 +41,7 @@ func (m *FileMapper) loadAndMount(tape *inventory.Tape) error {
 		return nil
 	}
 
-	log.Printf("[LOAD] Loading tape %s to drive %d", tape.Barcode, m.loaderDriveAddress)
+	log.Printf("Loading tape %s to drive %d", tape.Barcode, m.loaderDriveAddress)
 
 	if DryRun {
 		m.currentTape = tape
@@ -63,5 +63,24 @@ func (m *FileMapper) loadAndMount(tape *inventory.Tape) error {
 	}
 
 	m.currentTape = tape
+	return nil
+}
+
+func (m *FileMapper) UnmountAndUnload() error {
+	m.currentTape = nil
+	if DryRun {
+		return nil
+	}
+
+	err := m.drive.Unmount()
+	if err != nil {
+		return fmt.Errorf("unmounting drive: %w", err)
+	}
+
+	err = m.loader.MoveDriveTapeToStorage(m.loaderDriveAddress)
+	if err != nil {
+		return fmt.Errorf("moving tape from drive %d to storage: %w", m.loaderDriveAddress, err)
+	}
+
 	return nil
 }

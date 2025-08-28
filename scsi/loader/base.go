@@ -67,3 +67,50 @@ func (l *TapeLoader) MoveTapeToDrive(driveAddress uint16, volumeTag string) erro
 
 	return fmt.Errorf("no tape found with volume tag %s", volumeTag)
 }
+
+func (l *TapeLoader) MoveDriveTapeToStorage(driveAddress uint16) error {
+	dev, err := scsi.Open(l.DevicePath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = dev.Close()
+	}()
+
+	elements, err := dev.ReadElementStatus(element.ELEMENT_TYPE_DATA_TRANSFER, driveAddress, 1, true, false, false)
+	if err != nil {
+		return err
+	}
+
+	if len(elements) != 1 {
+		return fmt.Errorf("expected 1 data transfer element, got %d", len(elements))
+	}
+
+	sourceAddr := elements[0].SourceElementAddress
+	if sourceAddr != 0 {
+		elements, err = dev.ReadElementStatus(element.ELEMENT_TYPE_STORAGE, sourceAddr, 1, true, false, false)
+		if err != nil {
+			return err
+		}
+
+		if len(elements) == 1 && !elements[0].HasFlag(element.FLAG_FULL) {
+			log.Printf("Moving tape from drive %d back to source %d", driveAddress, sourceAddr)
+			return dev.MoveMedium(driveAddress, sourceAddr, scsi.MOVE_OPTION_NORMAL)
+		}
+	}
+
+	elements, err = dev.ReadElementStatus(element.ELEMENT_TYPE_STORAGE, 0, 255, true, false, false)
+	if err != nil {
+		return err
+	}
+
+	for _, elem := range elements {
+		if elem.HasFlag(element.FLAG_FULL) {
+			continue
+		}
+		log.Printf("Moving tape from drive %d to free slot %d", driveAddress, elem.Address)
+		return dev.MoveMedium(driveAddress, elem.Address, scsi.MOVE_OPTION_NORMAL)
+	}
+
+	return fmt.Errorf("no free slot found for tape in drive %d", driveAddress)
+}

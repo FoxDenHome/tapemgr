@@ -87,11 +87,6 @@ func (m *FileMapper) TombstonePath(path string) error {
 		return err
 	}
 
-	err = m.loadForSize(TOMBSTONE_SIZE_SPARE)
-	if err != nil {
-		return err
-	}
-
 	encryptedRelMainPath := m.path.Encrypt(relPath) + "/"
 
 	newFiles := make([]string, 0)
@@ -110,6 +105,11 @@ func (m *FileMapper) TombstonePath(path string) error {
 
 		clearPath := m.path.Decrypt(encryptedPath)
 		log.Printf("[TOMB] %s", clearPath)
+
+		err = m.loadForSize(TOMBSTONE_SIZE_SPARE)
+		if err != nil {
+			return err
+		}
 
 		newFiles = append(newFiles, encryptedPath)
 

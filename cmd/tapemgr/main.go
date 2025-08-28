@@ -24,22 +24,12 @@ var dryRun = flag.Bool("dry-run", false, "Dry run mode (do not perform any write
 
 var encMapper *mapper.FileMapper
 var inv *inventory.Inventory
-var driveDevice *drive.TapeDrive
 
 func main() {
 	flag.Parse()
 	mapper.DryRun = *dryRun
 
 	log.Printf("Hello from tapemgr!")
-	loaderDevice, err := loader.NewTapeLoader(*loaderDeviceStr)
-	if err != nil {
-		log.Fatalf("Failed to create tape loader: %v", err)
-	}
-
-	driveDevice, err = drive.NewTapeDrive(*driveDeviceStr, *tapeMount)
-	if err != nil {
-		log.Fatalf("Failed to create tape drive: %v", err)
-	}
 
 	identity, err := os.ReadFile(*tapeFileKey)
 	if err != nil {
@@ -59,6 +49,16 @@ func main() {
 	nameCryptor, err := encryption.NewPathCryptor(filenameKey)
 	if err != nil {
 		log.Fatalf("Failed to create path cryptor: %v", err)
+	}
+
+	loaderDevice, err := loader.NewTapeLoader(*loaderDeviceStr)
+	if err != nil {
+		log.Fatalf("Failed to create tape loader: %v", err)
+	}
+
+	driveDevice, err := drive.NewTapeDrive(*driveDeviceStr, *tapeMount)
+	if err != nil {
+		log.Fatalf("Failed to create tape drive: %v", err)
 	}
 
 	inv, err = inventory.New()
@@ -140,10 +140,8 @@ func storeRecursive(target string) error {
 }
 
 func putLibraryToIdle() {
-	if mapper.DryRun {
-		return
+	err := encMapper.UnmountAndUnload()
+	if err != nil {
+		log.Printf("Error unmounting and unloading tape: %v", err)
 	}
-
-	_ = driveDevice.Unmount()
-	// TODO: Store tape back into magazine
 }
