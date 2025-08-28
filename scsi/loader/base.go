@@ -8,6 +8,8 @@ import (
 	"github.com/FoxDenHome/tapemgr/scsi/element"
 )
 
+const LOADER_MAX_ELEMENTS = 255
+
 type TapeLoader struct {
 	DevicePath string
 }
@@ -27,7 +29,7 @@ func (l *TapeLoader) DriveAddressBySerial(serial string) (uint16, error) {
 		_ = dev.Close()
 	}()
 
-	elements, err := dev.ReadElementStatus(element.ELEMENT_TYPE_DATA_TRANSFER, 0, 255, true, false, true)
+	elements, err := dev.ReadElementStatus(element.ELEMENT_TYPE_DATA_TRANSFER, 0, LOADER_MAX_ELEMENTS, true, false, true)
 	if err != nil {
 		return 0, err
 	}
@@ -50,7 +52,7 @@ func (l *TapeLoader) MoveTapeToDrive(driveAddress uint16, volumeTag string) erro
 		_ = dev.Close()
 	}()
 
-	elements, err := dev.ReadElementStatus(element.ELEMENT_TYPE_ALL, 0, 255, true, true, false)
+	elements, err := dev.ReadElementStatus(element.ELEMENT_TYPE_ALL, 0, LOADER_MAX_ELEMENTS, true, true, false)
 	if err != nil {
 		return err
 	}
@@ -99,7 +101,7 @@ func (l *TapeLoader) MoveDriveTapeToStorage(driveAddress uint16) error {
 		}
 	}
 
-	elements, err = dev.ReadElementStatus(element.ELEMENT_TYPE_STORAGE, 0, 255, true, false, false)
+	elements, err = dev.ReadElementStatus(element.ELEMENT_TYPE_STORAGE, 0, LOADER_MAX_ELEMENTS, true, false, false)
 	if err != nil {
 		return err
 	}
