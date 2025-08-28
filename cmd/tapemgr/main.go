@@ -20,7 +20,7 @@ var driveDeviceStr = flag.String("drive-device", "/dev/nst0", "Path to the SCSI 
 var tapeMount = flag.String("tape-mount", "/mnt/tape", "Path to the tape mount point")
 var tapeFileKey = flag.String("tape-file-key", "tapes/file.key", "Path to the tape file key")
 var tapePathKey = flag.String("tape-path-key", "tapes/path.key", "Path to the tape path key")
-var cmdMode = flag.String("mode", "help", "Mode to run in (inventory, statistics, store, copyback)")
+var cmdMode = flag.String("mode", "help", "Mode to run in (scan, statistics, backup, restore, mount, format)")
 var dryRun = flag.Bool("dry-run", false, "Dry run mode (do not perform any write operations)")
 
 var fileMapper *mapper.FileMapper
@@ -108,7 +108,7 @@ func main() {
 			)
 		}
 
-	case "store":
+	case "backup":
 		defer putLibraryToIdle()
 
 		targets := flag.Args()
@@ -149,7 +149,7 @@ func main() {
 			log.Fatalf("Failed to format tape %s: %v", barcode, err)
 		}
 
-	case "copyback":
+	case "restore":
 		defer putLibraryToIdle()
 
 		log.Printf("Copyback TODO")
