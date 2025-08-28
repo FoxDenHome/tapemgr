@@ -1,8 +1,8 @@
 package element
 
 import (
+	"bytes"
 	"fmt"
-	"strings"
 )
 
 const (
@@ -73,13 +73,13 @@ func ParseDescriptor(elementType Type, hasPVolTag bool, data []byte) (*Descripto
 		SourceElementAddress:        uint16(data[10])<<8 | uint16(data[11]),
 		CodeSet:                     CodeSet(data[volTagEnd] & 0x0F),
 		IdentifierType:              IdentifierType(data[volTagEnd+1] & 0x0F),
-		Identifier:                  strings.Trim(string(data[volTagEnd+4:volTagEnd+4+identifierLen]), " "),
+		Identifier:                  string(bytes.Trim(data[volTagEnd+4:volTagEnd+4+identifierLen], "\x00 ")),
 
 		Flags: uint16(data[9])<<8 | uint16(data[2]),
 	}
 
 	if hasPVolTag {
-		baseDesc.VolumeTag = strings.Trim(string(data[12:48]), " ")
+		baseDesc.VolumeTag = string(bytes.Trim(data[12:48], "\x00 "))
 	}
 
 	return baseDesc, nil

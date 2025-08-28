@@ -1,5 +1,7 @@
 package scsi
 
+import "time"
+
 type MoveOption uint8
 
 const (
@@ -9,7 +11,7 @@ const (
 )
 
 func (d *SCSIDevice) MoveMedium(sourceAddress uint16, destAddress uint16, moveOption MoveOption) error {
-	_, err := d.request([]byte{
+	_, err := d.requestWithTimeout([]byte{
 		MOVE_MEDIUM,
 		0x00,
 		0x00, 0x00, // Transport element address, no library seems to care about this and auto-select the arm instead
@@ -18,7 +20,6 @@ func (d *SCSIDevice) MoveMedium(sourceAddress uint16, destAddress uint16, moveOp
 		0x00,
 		0x00,             // Last bit is invert flag, but this is not supported
 		byte(moveOption), // Last 5 bits are control byte, which are always 0
-	}, 0)
-
+	}, 6, time.Minute*5)
 	return err
 }

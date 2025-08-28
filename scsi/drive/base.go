@@ -43,6 +43,18 @@ func NewTapeDrive(devicePath string, mountPoint string) (*TapeDrive, error) {
 	}, nil
 }
 
+func (d *TapeDrive) SerialNumber() (string, error) {
+	dev, err := scsi.Open(d.GenericPath)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = dev.Close()
+	}()
+
+	return dev.SerialNumber()
+}
+
 func (d *TapeDrive) Load() error {
 	return d.loadUnload(scsi.LOAD_AND_THREAD)
 }

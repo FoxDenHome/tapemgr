@@ -1,13 +1,17 @@
 package scsi
 
-import "github.com/platinasystems/scsi"
+import (
+	"time"
+
+	"github.com/FoxDenHome/goscsi"
+)
 
 type SCSIDevice struct {
-	dev scsi.Dev
+	dev goscsi.Dev
 }
 
 func Open(path string) (*SCSIDevice, error) {
-	dev, err := scsi.Open(path)
+	dev, err := goscsi.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -25,4 +29,18 @@ func (d *SCSIDevice) request(req []byte, respLen int) ([]byte, error) {
 		return nil, err
 	}
 	return resp, nil
+}
+
+func (d *SCSIDevice) requestWithTimeout(req []byte, respLen int, timeout time.Duration) ([]byte, error) {
+	resp := make([]byte, respLen)
+	err := d.dev.RequestWithTimeout(req, resp, timeout)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (d *SCSIDevice) SerialNumber() (string, error) {
+	str, err := d.dev.SerialNumber()
+	return str.String(), err
 }

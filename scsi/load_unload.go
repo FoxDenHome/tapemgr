@@ -1,5 +1,7 @@
 package scsi
 
+import "time"
+
 type LoadUnloadOperation uint8
 
 const (
@@ -10,13 +12,13 @@ const (
 )
 
 func (d *SCSIDevice) LoadUnload(op LoadUnloadOperation) error {
-	_, err := d.request([]byte{
+	_, err := d.requestWithTimeout([]byte{
 		LOAD_UNLOAD,
 		0x00, // Lowest bit is immediate, we want to always wait
 		0x00,
 		0x00,
 		uint8(op),
 		0x00,
-	}, 0)
+	}, 6, time.Minute*5)
 	return err
 }
