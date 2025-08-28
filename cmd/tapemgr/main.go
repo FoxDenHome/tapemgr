@@ -20,6 +20,7 @@ var tapeMount = flag.String("tape-mount", "/mnt/tape", "Path to the tape mount p
 var tapeFileKey = flag.String("tape-file-key", "tapes/file.key", "Path to the tape file key")
 var tapePathKey = flag.String("tape-path-key", "tapes/path.key", "Path to the tape path key")
 var cmdMode = flag.String("mode", "help", "Mode to run in (inventory, statistics, store, copyback)")
+var dryRun = flag.Bool("dry-run", false, "Dry run mode (do not perform any write operations)")
 
 var encMapper *mapper.FileMapper
 var inv *inventory.Inventory
@@ -27,6 +28,7 @@ var driveDevice *drive.TapeDrive
 
 func main() {
 	flag.Parse()
+	mapper.DryRun = *dryRun
 
 	log.Printf("Hello from tapemgr!")
 	loaderDevice, err := loader.NewTapeLoader(*loaderDeviceStr)

@@ -18,6 +18,10 @@ func (m *FileMapper) ScanTape(barcode string) error {
 	}
 
 	log.Printf("[SCAN] Re-inventorying tape %s", barcode)
+	if DryRun {
+		return nil
+	}
+
 	defer func() {
 		_ = m.drive.Unmount()
 	}()

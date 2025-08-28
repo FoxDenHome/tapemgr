@@ -47,7 +47,7 @@ func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
 		if entry.IsDir() {
 			err = t.addDir(drive, entryPath)
 		} else {
-			err = t.AddFiles(drive, entryPath)
+			err = t.addFile(drive, entryPath)
 		}
 		if err != nil {
 			return err

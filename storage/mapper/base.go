@@ -13,7 +13,7 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
-var DryRun = false
+var DryRun = true
 
 type FileMapper struct {
 	file *encryption.FileCryptor
