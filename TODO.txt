@@ -1,4 +1,4 @@
 - Commands
-    - restore-tape which uses user.ltfs.partition and user.ltfs.startblock (like ltfs_ordered_copy)
-    - restore-file which grabs the best version of the file(s) and restores those
     - All these need is just wiring up to RestoreByFilter
+        - restore-file
+        - restore-tape
