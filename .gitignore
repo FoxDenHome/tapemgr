@@ -1,3 +1,7 @@
 /tapes
 /tapemgr
 *.exe
+
+/src
+/pkg
+*.pkg.tar*
