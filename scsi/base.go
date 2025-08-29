@@ -24,7 +24,7 @@ func (d *SCSIDevice) Close() error {
 
 func (d *SCSIDevice) request(req []byte, respLen int) ([]byte, error) {
 	resp := make([]byte, respLen)
-	err := d.dev.Request(req, resp)
+	err := d.dev.Request(req, resp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (d *SCSIDevice) request(req []byte, respLen int) ([]byte, error) {
 
 func (d *SCSIDevice) requestWithTimeout(req []byte, respLen int, timeout time.Duration) ([]byte, error) {
 	resp := make([]byte, respLen)
-	err := d.dev.RequestWithTimeout(req, resp, timeout)
+	err := d.dev.RequestWithTimeout(req, resp, nil, timeout)
 	if err != nil {
 		return nil, err
 	}
