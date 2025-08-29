@@ -31,7 +31,7 @@ func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
 			tape.Files[name] = file
 		}
 		file.tape = tape
-		file.name = name
+		file.path = name
 	}
 	return tape, nil
 }
@@ -102,7 +102,7 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 
 	t.Files[path] = &FileInfo{
 		tape: t,
-		name: path,
+		path: path,
 
 		Size:         stat.Size(),
 		ModifiedTime: stat.ModTime(),

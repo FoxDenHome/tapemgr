@@ -14,7 +14,7 @@ type FileInfo struct {
 	Size         int64     `json:"size"`
 
 	tape *Tape
-	name string
+	path string
 }
 
 func (i *Inventory) GetBestFiles() map[string]*FileInfo {
@@ -75,8 +75,8 @@ func (f *FileInfo) GetTape() *Tape {
 	return f.tape
 }
 
-func (f *FileInfo) GetName() string {
-	return f.name
+func (f *FileInfo) GetPath() string {
+	return f.path
 }
 
 type ExtendedFileInfo struct {
@@ -86,11 +86,11 @@ type ExtendedFileInfo struct {
 }
 
 func (f *FileInfo) GetExtended(drive *drive.TapeDrive) (*ExtendedFileInfo, error) {
-	partitionXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.name), "user.ltfs.partition")
+	partitionXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.path), "user.ltfs.partition")
 	if err != nil {
 		return nil, err
 	}
-	startBlockXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.name), "user.ltfs.startblock")
+	startBlockXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.path), "user.ltfs.startblock")
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (f *FileInfo) GetExtended(drive *drive.TapeDrive) (*ExtendedFileInfo, error
 	}
 
 	return &ExtendedFileInfo{
-		Path:       f.name,
+		Path:       f.path,
 		StartBlock: int(startBlockNum),
 		Partition:  string(partitionXattr),
 	}, nil

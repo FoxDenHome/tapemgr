@@ -103,7 +103,7 @@ func main() {
 
 		targets := flag.Args()
 		for _, target := range targets {
-			err = fileMapper.EncryptRecursive(target)
+			err = fileMapper.BackupRecursive(target)
 			if err != nil {
 				log.Fatalf("Failed to store %v: %v", target, err)
 			}
@@ -152,7 +152,7 @@ func main() {
 	case "restore-test":
 		defer putLibraryToIdle()
 
-		fileMapper.DecryptByFilter(func(path string, info *inventory.FileInfo) bool {
+		fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
 			return strings.Contains(path, "ASUS")
 		})
 

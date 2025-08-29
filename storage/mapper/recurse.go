@@ -1,7 +1,9 @@
 package mapper
 
 import (
+	"crypto/rand"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,7 +12,7 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
-func (m *FileMapper) EncryptRecursive(target string) error {
+func (m *FileMapper) BackupRecursive(target string) error {
 	info, err := os.Stat(target)
 	if err != nil {
 		return err
@@ -22,7 +24,7 @@ func (m *FileMapper) EncryptRecursive(target string) error {
 			return err
 		}
 		for _, entry := range entries {
-			err = m.EncryptRecursive(filepath.Join(target, entry.Name()))
+			err = m.BackupRecursive(filepath.Join(target, entry.Name()))
 			if err != nil {
 				return err
 			}
@@ -39,7 +41,7 @@ func (m *FileMapper) EncryptRecursive(target string) error {
 
 type FilterFunc func(path string, info *inventory.FileInfo) bool
 
-func (m *FileMapper) DecryptByFilter(filter FilterFunc) error {
+func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 	allFileMap := make(map[string]map[string]*inventory.FileInfo)
 
 	allFiles := m.inventory.GetBestFiles()
@@ -68,9 +70,19 @@ func (m *FileMapper) DecryptByFilter(filter FilterFunc) error {
 
 		fileInfos := make([]*inventory.ExtendedFileInfo, 0, len(filesMap))
 		for _, file := range filesMap {
-			fileInfo, err := file.GetExtended(m.drive)
-			if err != nil {
-				return err
+			var fileInfo *inventory.ExtendedFileInfo
+			if DryRun {
+				sb, _ := rand.Int(rand.Reader, big.NewInt(1<<32-1))
+				fileInfo = &inventory.ExtendedFileInfo{
+					Path:       file.GetPath(),
+					Partition:  "a",
+					StartBlock: int(sb.Int64()),
+				}
+			} else {
+				fileInfo, err = file.GetExtended(m.drive)
+				if err != nil {
+					return err
+				}
 			}
 			fileInfos = append(fileInfos, fileInfo)
 		}
