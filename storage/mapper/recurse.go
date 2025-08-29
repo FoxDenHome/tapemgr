@@ -73,10 +73,15 @@ func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 			var fileInfo *inventory.ExtendedFileInfo
 			if DryRun {
 				sb, _ := rand.Int(rand.Reader, big.NewInt(1<<32-1))
+				sb64 := sb.Int64()
+				part := "a"
+				if sb64%2 == 1 {
+					part = "b"
+				}
 				fileInfo = &inventory.ExtendedFileInfo{
 					Path:       file.GetPath(),
-					Partition:  "a",
-					StartBlock: int(sb.Int64()),
+					Partition:  part,
+					StartBlock: int(sb64),
 				}
 			} else {
 				fileInfo, err = file.GetExtended(m.drive)
