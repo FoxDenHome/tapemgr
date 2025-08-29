@@ -126,9 +126,6 @@ func (m *FileMapper) backupFile(path string) error {
 
 	encryptedPath := filepath.Join(m.drive.MountPoint(), encryptedRelPath)
 	log.Printf("[STOR] %s", path)
-	if existingInfo != nil {
-		log.Printf("       (replacing existing backup from %s)", existingInfo.ModifiedTime.Format(time.RFC3339))
-	}
 
 	err = m.loadForSize(candidateInfo.Size())
 	if err != nil {
