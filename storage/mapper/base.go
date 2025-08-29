@@ -60,7 +60,7 @@ func New(
 	}, nil
 }
 
-func (m *FileMapper) TombstonePath(path string) error {
+func (m *FileMapper) tombstonePath(path string) error {
 	path = filepath.Clean(path)
 
 	var err error
@@ -108,7 +108,7 @@ func (m *FileMapper) TombstonePath(path string) error {
 		}
 	}
 
-	if DryRun {
+	if DryRun || len(newFiles) == 0 {
 		return nil
 	}
 

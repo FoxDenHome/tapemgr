@@ -103,13 +103,10 @@ func main() {
 
 		targets := flag.Args()
 		for _, target := range targets {
+			log.Printf("Backing up target %v", target)
 			err = fileMapper.Backup(target)
 			if err != nil {
-				log.Fatalf("Failed to store %v: %v", target, err)
-			}
-			err = fileMapper.TombstonePath(target)
-			if err != nil {
-				log.Fatalf("Failed to create tombstones for %v: %v", target, err)
+				log.Fatalf("Failed to backup %v: %v", target, err)
 			}
 		}
 
@@ -176,10 +173,14 @@ func main() {
 
 	case "help":
 		flag.Usage()
+		return
 	default:
 		log.Printf("Unknown mode: %v", *cmdMode)
 		flag.Usage()
+		return
 	}
+
+	log.Printf("tapemgr command done, shutting down")
 }
 
 func putLibraryToIdle() {
