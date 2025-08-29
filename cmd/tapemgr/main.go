@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 	mapper.DryRun = *dryRun
 
-	log.Printf("tapemgr starting up")
+	log.Printf("tapemgr (version %s / git %s) starting up", util.GetVersion(), util.GetGitRev())
 
 	identity, err := os.ReadFile(*tapeFileKey)
 	if err != nil {
