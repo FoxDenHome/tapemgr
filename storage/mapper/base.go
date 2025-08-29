@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
 	"github.com/FoxDenHome/tapemgr/scsi/loader"
@@ -131,7 +132,7 @@ func (m *FileMapper) backupFile(path string) error {
 	m.handledFiles[encryptedRelPath] = true
 
 	existingInfo := m.inventory.GetFile(encryptedRelPath)
-	if existingInfo != nil && !candidateInfo.ModTime().After(existingInfo.ModifiedTime) {
+	if existingInfo != nil && (candidateInfo.ModTime().Sub(existingInfo.ModifiedTime)).Abs() < time.Second {
 		// log.Printf("[SKIP] %s", path)
 		return nil
 	}
