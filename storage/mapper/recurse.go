@@ -96,7 +96,7 @@ func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 		})
 
 		for _, fileInfo := range fileInfos {
-			log.Printf("Copying file %s from tape %s", fileInfo.Path, barcode)
+			log.Printf("Copying file sb=%d part=%s from tape %s", fileInfo.StartBlock, fileInfo.Partition, barcode)
 		}
 	}
 
