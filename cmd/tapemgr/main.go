@@ -152,9 +152,12 @@ func main() {
 	case "restore-test":
 		defer putLibraryToIdle()
 
-		fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
+		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
 			return strings.Contains(path, "ASUS")
-		})
+		}, "/tmp/restore")
+		if err != nil {
+			log.Fatalf("Failed to restore files: %v", err)
+		}
 
 	case "help":
 		flag.Usage()

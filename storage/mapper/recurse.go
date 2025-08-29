@@ -41,7 +41,12 @@ func (m *FileMapper) BackupRecursive(target string) error {
 
 type FilterFunc func(path string, info *inventory.FileInfo) bool
 
-func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
+type restoreFile struct {
+	*inventory.ExtendedFileInfo
+	decryptedPath string
+}
+
+func (m *FileMapper) RestoreByFilter(filter FilterFunc, target string) error {
 	allFileMap := make(map[string]map[string]*inventory.FileInfo)
 
 	allFiles := m.inventory.GetBestFiles()
@@ -49,15 +54,15 @@ func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 		if file.IsTombstone() {
 			continue
 		}
-		decryptedFile := m.path.Decrypt(path)
-		if !filter(decryptedFile, file) {
+		decryptedPath := m.path.Decrypt(path)
+		if !filter(decryptedPath, file) {
 			continue
 		}
 		tape := file.GetTape()
 		if _, ok := allFileMap[tape.Barcode]; !ok {
 			allFileMap[tape.Barcode] = make(map[string]*inventory.FileInfo)
 		}
-		allFileMap[tape.Barcode][path] = file
+		allFileMap[tape.Barcode][decryptedPath] = file
 	}
 
 	for barcode, filesMap := range allFileMap {
@@ -68,8 +73,8 @@ func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 			return err
 		}
 
-		fileInfos := make([]*inventory.ExtendedFileInfo, 0, len(filesMap))
-		for _, file := range filesMap {
+		fileInfos := make([]*restoreFile, 0, len(filesMap))
+		for decryptedPath, file := range filesMap {
 			var fileInfo *inventory.ExtendedFileInfo
 			if DryRun {
 				sb, _ := rand.Int(rand.Reader, big.NewInt(1<<32-1))
@@ -89,10 +94,13 @@ func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 					return err
 				}
 			}
-			fileInfos = append(fileInfos, fileInfo)
+			fileInfos = append(fileInfos, &restoreFile{
+				ExtendedFileInfo: fileInfo,
+				decryptedPath:    decryptedPath,
+			})
 		}
 
-		slices.SortFunc(fileInfos, func(a, b *inventory.ExtendedFileInfo) int {
+		slices.SortFunc(fileInfos, func(a, b *restoreFile) int {
 			partitionCmp := strings.Compare(a.Partition, b.Partition)
 			if partitionCmp != 0 {
 				return partitionCmp
@@ -101,7 +109,14 @@ func (m *FileMapper) RestoreByFilter(filter FilterFunc) error {
 		})
 
 		for _, fileInfo := range fileInfos {
-			log.Printf("Copying file sb=%d part=%s from tape %s", fileInfo.StartBlock, fileInfo.Partition, barcode)
+			log.Printf("Copying file %s sb=%d part=%s from tape %s", fileInfo.decryptedPath, fileInfo.StartBlock, fileInfo.Partition, barcode)
+			if DryRun {
+				continue
+			}
+			err := m.file.DecryptMkdirAll(filepath.Join(m.drive.MountPoint(), fileInfo.Path), filepath.Join(target, fileInfo.decryptedPath))
+			if err != nil {
+				return err
+			}
 		}
 	}
 

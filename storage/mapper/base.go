@@ -26,8 +26,7 @@ type FileMapper struct {
 
 	currentTape *inventory.Tape
 
-	sourcePrefix    string
-	encryptedPrefix string
+	sourcePrefix string
 
 	handledFiles map[string]bool
 }
@@ -40,13 +39,8 @@ func New(
 	drive *drive.TapeDrive,
 	sourcePrefix string,
 ) (*FileMapper, error) {
-
-	encryptedPrefix := drive.MountPoint()
 	if !filepath.IsAbs(sourcePrefix) {
 		return nil, fmt.Errorf("source prefix %s is not absolute", sourcePrefix)
-	}
-	if !filepath.IsAbs(encryptedPrefix) {
-		return nil, fmt.Errorf("encrypted prefix %s is not absolute", encryptedPrefix)
 	}
 
 	serialNumber, err := drive.SerialNumber()
@@ -68,9 +62,8 @@ func New(
 		drive:              drive,
 		loaderDriveAddress: address,
 
-		sourcePrefix:    sourcePrefix,
-		encryptedPrefix: encryptedPrefix,
-		handledFiles:    make(map[string]bool),
+		sourcePrefix: sourcePrefix,
+		handledFiles: make(map[string]bool),
 	}, nil
 }
 
@@ -114,7 +107,7 @@ func (m *FileMapper) TombstonePath(path string) error {
 		newFiles = append(newFiles, encryptedPath)
 
 		if !DryRun {
-			tombPath := filepath.Join(m.encryptedPrefix, encryptedPath)
+			tombPath := filepath.Join(m.drive.MountPoint(), encryptedPath)
 			tombDir := filepath.Dir(tombPath)
 			err = os.MkdirAll(tombDir, 0o755)
 			if err != nil {
@@ -165,7 +158,7 @@ func (m *FileMapper) Encrypt(path string) error {
 		return nil
 	}
 
-	encryptedPath := filepath.Join(m.encryptedPrefix, encryptedRelPath)
+	encryptedPath := filepath.Join(m.drive.MountPoint(), encryptedRelPath)
 	log.Printf("[STOR] %s", path)
 
 	err = m.loadForSize(candidateInfo.Size())
@@ -195,7 +188,7 @@ func (m *FileMapper) Decrypt(path string) error {
 		return fmt.Errorf("path %s is not absolute", path)
 	}
 
-	relPath, err := filepath.Rel(m.encryptedPrefix, path)
+	relPath, err := filepath.Rel(m.drive.MountPoint(), path)
 	if err != nil {
 		return err
 	}
