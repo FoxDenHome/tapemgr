@@ -132,7 +132,7 @@ func (m *FileMapper) Encrypt(path string) error {
 
 	existingInfo := m.inventory.GetFile(encryptedRelPath)
 	if existingInfo != nil && !candidateInfo.ModTime().After(existingInfo.ModifiedTime) {
-		log.Printf("[SKIP] %s", path)
+		// log.Printf("[SKIP] %s", path)
 		return nil
 	}
 
