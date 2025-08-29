@@ -66,7 +66,7 @@ func main() {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
 
-	fileMapper, err = mapper.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice, "/")
+	fileMapper, err = mapper.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice)
 	if err != nil {
 		log.Fatalf("Failed to create mapper: %v", err)
 	}
@@ -142,19 +142,34 @@ func main() {
 	case "restore-tape":
 		defer putLibraryToIdle()
 
-		log.Printf("restore-tape TODO")
+		target := flag.Arg(0)
+		tapes := flag.Args()[1:]
+		tapesMap := make(map[string]bool)
+		for _, tape := range tapes {
+			tapesMap[tape] = true
+		}
+
+		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
+			return tapesMap[info.GetTape().Barcode]
+		}, target)
+		if err != nil {
+			log.Fatalf("Failed to restore tapes: %v", err)
+		}
 
 	case "restore-file":
 		defer putLibraryToIdle()
 
-		log.Printf("restore-file TODO")
-
-	case "restore-test":
-		defer putLibraryToIdle()
+		target := flag.Arg(0)
+		files := flag.Args()[1:]
+		filesMap := make(map[string]bool)
+		for _, file := range files {
+			file, _ = util.StripLeadingSlashes(file)
+			filesMap[file] = true
+		}
 
 		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
-			return strings.Contains(path, "ASUS") && info.GetTape().Barcode == "P0010SL6"
-		}, "/tmp/restore")
+			return filesMap[path]
+		}, target)
 		if err != nil {
 			log.Fatalf("Failed to restore files: %v", err)
 		}

@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"crypto/rand"
+	"fmt"
 	"log"
 	"math/big"
 	"os"
@@ -47,6 +48,10 @@ type restoreFile struct {
 }
 
 func (m *FileMapper) RestoreByFilter(filter FilterFunc, target string) error {
+	if !filepath.IsAbs(target) {
+		return fmt.Errorf("target path %s is not absolute", target)
+	}
+
 	allFileMap := make(map[string]map[string]*inventory.FileInfo)
 
 	allFiles := m.inventory.GetBestFiles()

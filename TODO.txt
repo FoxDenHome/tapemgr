@@ -1,4 +1,0 @@
-- Commands
-    - All these need is just wiring up to RestoreByFilter
-        - restore-file
-        - restore-tape

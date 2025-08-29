@@ -26,8 +26,6 @@ type FileMapper struct {
 
 	currentTape *inventory.Tape
 
-	sourcePrefix string
-
 	handledFiles map[string]bool
 }
 
@@ -37,12 +35,7 @@ func New(
 	inventory *inventory.Inventory,
 	loader *loader.TapeLoader,
 	drive *drive.TapeDrive,
-	sourcePrefix string,
 ) (*FileMapper, error) {
-	if !filepath.IsAbs(sourcePrefix) {
-		return nil, fmt.Errorf("source prefix %s is not absolute", sourcePrefix)
-	}
-
 	serialNumber, err := drive.SerialNumber()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tape drive serial number: %v", err)
@@ -62,7 +55,6 @@ func New(
 		drive:              drive,
 		loaderDriveAddress: address,
 
-		sourcePrefix: sourcePrefix,
 		handledFiles: make(map[string]bool),
 	}, nil
 }
@@ -75,12 +67,7 @@ func (m *FileMapper) TombstonePath(path string) error {
 		return fmt.Errorf("path %s is not absolute", path)
 	}
 
-	relPath, err := filepath.Rel(m.sourcePrefix, path)
-	if err != nil {
-		return err
-	}
-
-	encryptedRelMainPath := m.path.Encrypt(relPath) + "/"
+	encryptedMainPath := m.path.Encrypt(path) + "/"
 
 	newFiles := make([]string, 0)
 
@@ -89,7 +76,7 @@ func (m *FileMapper) TombstonePath(path string) error {
 		if m.handledFiles[encryptedPath] {
 			continue
 		}
-		if !strings.HasPrefix(encryptedPath, encryptedRelMainPath) {
+		if !strings.HasPrefix(encryptedPath, encryptedMainPath) {
 			continue
 		}
 		if file.IsTombstone() {
@@ -135,21 +122,12 @@ func (m *FileMapper) Encrypt(path string) error {
 		return fmt.Errorf("path %s is not absolute", path)
 	}
 
-	relPath, err := filepath.Rel(m.sourcePrefix, path)
-	if err != nil {
-		return err
-	}
-
-	if strings.HasPrefix(relPath, "../") {
-		return fmt.Errorf("path %s is outside the source prefix %s", path, m.sourcePrefix)
-	}
-
 	candidateInfo, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
 
-	encryptedRelPath := m.path.Encrypt(relPath)
+	encryptedRelPath := m.path.Encrypt(path)
 	m.handledFiles[encryptedRelPath] = true
 
 	existingInfo := m.inventory.GetFile(encryptedRelPath)
@@ -178,27 +156,4 @@ func (m *FileMapper) Encrypt(path string) error {
 	}
 
 	return nil
-}
-
-func (m *FileMapper) Decrypt(path string) error {
-	path = filepath.Clean(path)
-
-	var err error
-	if !filepath.IsAbs(path) {
-		return fmt.Errorf("path %s is not absolute", path)
-	}
-
-	relPath, err := filepath.Rel(m.drive.MountPoint(), path)
-	if err != nil {
-		return err
-	}
-
-	if strings.HasPrefix(relPath, "../") {
-		return fmt.Errorf("path %s is outside the encrypted prefix %s", path, m.sourcePrefix)
-	}
-
-	decryptedRelPath := m.path.Decrypt(relPath)
-	decryptedPath := filepath.Join(m.sourcePrefix, decryptedRelPath)
-
-	return m.file.DecryptMkdirAll(path, decryptedPath)
 }
