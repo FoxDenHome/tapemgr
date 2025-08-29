@@ -153,7 +153,7 @@ func main() {
 		defer putLibraryToIdle()
 
 		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
-			return strings.Contains(path, "ASUS")
+			return strings.Contains(path, "ASUS") && info.GetTape().Barcode == "P0010SL6"
 		}, "/tmp/restore")
 		if err != nil {
 			log.Fatalf("Failed to restore files: %v", err)
