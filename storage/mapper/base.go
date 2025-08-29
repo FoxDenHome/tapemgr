@@ -72,29 +72,29 @@ func (m *FileMapper) TombstonePath(path string) error {
 	newFiles := make([]string, 0)
 
 	allFiles := m.inventory.GetBestFiles()
-	for encryptedPath, file := range allFiles {
-		if m.handledFiles[encryptedPath] {
+	for encryptedRelPath, file := range allFiles {
+		if m.handledFiles[encryptedRelPath] {
 			continue
 		}
-		if !strings.HasPrefix(encryptedPath, encryptedMainPath) {
+		if !strings.HasPrefix(encryptedRelPath, encryptedMainPath) {
 			continue
 		}
 		if file.IsTombstone() {
 			continue
 		}
 
-		clearPath := m.path.Decrypt(encryptedPath)
-		log.Printf("[TOMB] %s", clearPath)
+		clearRelPath := m.path.Decrypt(encryptedRelPath)
+		log.Printf("[TOMB] /%s", clearRelPath)
 
 		err = m.loadForSize(TOMBSTONE_SIZE_SPARE)
 		if err != nil {
 			return err
 		}
 
-		newFiles = append(newFiles, encryptedPath)
+		newFiles = append(newFiles, encryptedRelPath)
 
 		if !DryRun {
-			tombPath := filepath.Join(m.drive.MountPoint(), encryptedPath)
+			tombPath := filepath.Join(m.drive.MountPoint(), encryptedRelPath)
 			tombDir := filepath.Dir(tombPath)
 			err = os.MkdirAll(tombDir, 0o755)
 			if err != nil {
@@ -114,7 +114,7 @@ func (m *FileMapper) TombstonePath(path string) error {
 	return m.currentTape.AddFiles(m.drive, newFiles...)
 }
 
-func (m *FileMapper) Encrypt(path string) error {
+func (m *FileMapper) backupFile(path string) error {
 	path = filepath.Clean(path)
 
 	var err error

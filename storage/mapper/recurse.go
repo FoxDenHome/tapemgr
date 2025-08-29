@@ -13,7 +13,7 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
-func (m *FileMapper) BackupRecursive(target string) error {
+func (m *FileMapper) Backup(target string) error {
 	info, err := os.Stat(target)
 	if err != nil {
 		return err
@@ -25,13 +25,13 @@ func (m *FileMapper) BackupRecursive(target string) error {
 			return err
 		}
 		for _, entry := range entries {
-			err = m.BackupRecursive(filepath.Join(target, entry.Name()))
+			err = m.Backup(filepath.Join(target, entry.Name()))
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		err = m.Encrypt(target)
+		err = m.backupFile(target)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ type restoreFile struct {
 	decryptedPath string
 }
 
-func (m *FileMapper) RestoreByFilter(filter FilterFunc, target string) error {
+func (m *FileMapper) Restore(filter FilterFunc, target string) error {
 	if !filepath.IsAbs(target) {
 		return fmt.Errorf("target path %s is not absolute", target)
 	}

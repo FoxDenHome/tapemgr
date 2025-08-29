@@ -103,7 +103,7 @@ func main() {
 
 		targets := flag.Args()
 		for _, target := range targets {
-			err = fileMapper.BackupRecursive(target)
+			err = fileMapper.Backup(target)
 			if err != nil {
 				log.Fatalf("Failed to store %v: %v", target, err)
 			}
@@ -149,7 +149,7 @@ func main() {
 			tapesMap[tape] = true
 		}
 
-		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
+		err := fileMapper.Restore(func(path string, info *inventory.FileInfo) bool {
 			return tapesMap[info.GetTape().Barcode]
 		}, target)
 		if err != nil {
@@ -167,7 +167,7 @@ func main() {
 			filesMap[file] = true
 		}
 
-		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
+		err := fileMapper.Restore(func(path string, info *inventory.FileInfo) bool {
 			return filesMap[path]
 		}, target)
 		if err != nil {
