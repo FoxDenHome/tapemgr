@@ -41,7 +41,7 @@ func (c *FileCryptor) Encrypt(src, dest string) error {
 		_ = os.Remove(dest)
 		return err
 	}
-	return copyFileModTime(src, dest)
+	return nil
 }
 
 func (c *FileCryptor) EncryptMkdirAll(src, dest string) error {
@@ -57,7 +57,7 @@ func (c *FileCryptor) Decrypt(src, dest string) error {
 		_ = os.Remove(dest)
 		return err
 	}
-	return copyFileModTime(src, dest)
+	return nil
 }
 
 func (c *FileCryptor) DecryptMkdirAll(src, dest string) error {
