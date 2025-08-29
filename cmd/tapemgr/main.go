@@ -149,6 +149,13 @@ func main() {
 
 		log.Printf("restore-file TODO")
 
+	case "restore-test":
+		defer putLibraryToIdle()
+
+		fileMapper.DecryptByFilter(func(path string, info *inventory.FileInfo) bool {
+			return strings.Contains(path, "ASUS")
+		})
+
 	case "help":
 		flag.Usage()
 	default:

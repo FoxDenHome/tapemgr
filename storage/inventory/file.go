@@ -1,6 +1,13 @@
 package inventory
 
-import "time"
+import (
+	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/FoxDenHome/tapemgr/scsi/drive"
+	"github.com/pkg/xattr"
+)
 
 type FileInfo struct {
 	ModifiedTime time.Time `json:"modified_time"`
@@ -62,4 +69,39 @@ func (i *FileInfo) IsTombstone() bool {
 
 func (f *FileInfo) IsBetterThan(other *FileInfo) bool {
 	return f.ModifiedTime.After(other.ModifiedTime)
+}
+
+func (f *FileInfo) GetTape() *Tape {
+	return f.tape
+}
+
+func (f *FileInfo) GetName() string {
+	return f.name
+}
+
+type ExtendedFileInfo struct {
+	Path       string
+	StartBlock int
+	Partition  string
+}
+
+func (f *FileInfo) GetExtended(drive *drive.TapeDrive) (*ExtendedFileInfo, error) {
+	partitionXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.name), "user.ltfs.partition")
+	if err != nil {
+		return nil, err
+	}
+	startBlockXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.name), "user.ltfs.startblock")
+	if err != nil {
+		return nil, err
+	}
+	startBlockNum, err := strconv.ParseInt(string(startBlockXattr), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ExtendedFileInfo{
+		Path:       f.name,
+		StartBlock: int(startBlockNum),
+		Partition:  string(partitionXattr),
+	}, nil
 }
