@@ -5,56 +5,12 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
-
-type recursionInfo interface {
-	IsDir() bool
-	Name() string
-}
-
-func (m *FileMapper) Backup(target string) error {
-	info, err := os.Stat(target)
-	if err != nil {
-		return err
-	}
-
-	if !info.IsDir() {
-		return m.backupFile(target)
-	}
-
-	err = m.backupDir(target)
-	if err != nil {
-		return err
-	}
-
-	return m.tombstonePath(target)
-}
-
-func (m *FileMapper) backupDir(target string) error {
-	entries, err := os.ReadDir(target)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		subTarget := filepath.Join(target, entry.Name())
-		if entry.IsDir() {
-			err = m.backupDir(subTarget)
-		} else {
-			err = m.backupFile(subTarget)
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 type FilterFunc func(path string, info *inventory.FileInfo) bool
 

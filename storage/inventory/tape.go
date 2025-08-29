@@ -90,14 +90,12 @@ func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 }
 
 func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
-	mountPoint := drive.MountPoint()
+	path, _ = util.StripLeadingSlashes(path)
 
-	stat, err := os.Stat(filepath.Join(mountPoint, path))
+	stat, err := os.Stat(filepath.Join(drive.MountPoint(), path))
 	if err != nil {
 		return err
 	}
-
-	path, _ = util.StripLeadingSlashes(path)
 
 	t.Files[path] = &FileInfo{
 		tape: t,
