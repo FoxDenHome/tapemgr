@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
+	"github.com/FoxDenHome/tapemgr/util"
 	"golang.org/x/sys/unix"
 )
 
@@ -26,8 +26,8 @@ func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
 		return nil, err
 	}
 	for path, file := range tape.Files {
-		if path[0] == '/' {
-			path = strings.TrimPrefix(path, "/")
+		path, removed := util.StripLeadingSlashes(path)
+		if removed {
 			delete(tape.Files, path)
 			tape.Files[path] = file
 		}
@@ -97,9 +97,7 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	if path[0] == '/' {
-		path = strings.TrimPrefix(path, "/")
-	}
+	path, _ = util.StripLeadingSlashes(path)
 
 	t.Files[path] = &FileInfo{
 		tape: t,

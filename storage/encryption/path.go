@@ -5,6 +5,8 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"strings"
+
+	"github.com/FoxDenHome/tapemgr/util"
 )
 
 type PathCryptor struct {
@@ -28,6 +30,8 @@ func NewPathCryptor(key []byte) (*PathCryptor, error) {
 func (c *PathCryptor) Encrypt(path string) string {
 	encrypter := cipher.NewCBCEncrypter(c.cipher, c.iv)
 
+	path, _ = util.StripLeadingSlashes(path)
+
 	parts := strings.Split(path, "/")
 
 	encryptedParts := make([]string, 0, len(parts))
@@ -44,6 +48,8 @@ func (c *PathCryptor) Encrypt(path string) string {
 
 func (c *PathCryptor) Decrypt(path string) string {
 	decrypter := cipher.NewCBCDecrypter(c.cipher, c.iv)
+
+	path, _ = util.StripLeadingSlashes(path)
 
 	pathNormalized := strings.ReplaceAll(path, ",/,", "")
 	parts := strings.Split(pathNormalized, "/")
