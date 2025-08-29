@@ -150,6 +150,8 @@ func main() {
 		log.Printf("restore-file TODO")
 
 	case "restore-test":
+		defer putLibraryToIdle()
+
 		err := fileMapper.RestoreByFilter(func(path string, info *inventory.FileInfo) bool {
 			return strings.Contains(path, "ASUS") && info.GetTape().Barcode == "P0010SL6"
 		}, "/tmp/restore")
