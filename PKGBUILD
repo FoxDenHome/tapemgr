@@ -31,5 +31,5 @@ build() {
 
 package() {
   cd "${srcdir}"
-  install -Dm755 ./tapemgr "${pkgdir}/bin/tapemgr"
+  install -Dm755 ./tapemgr "${pkgdir}/usr/bin/tapemgr"
 }
