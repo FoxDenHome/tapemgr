@@ -17,8 +17,9 @@ import (
 var loaderDeviceStr = flag.String("loader-device", "/dev/sch0", "Path to the SCSI tape loader device")
 var driveDeviceStr = flag.String("drive-device", "/dev/nst0", "Path to the SCSI tape drive device")
 var tapeMount = flag.String("tape-mount", "/mnt/tape", "Path to the tape mount point")
-var tapeFileKey = flag.String("tape-file-key", "tapes/file.key", "Path to the tape file key")
-var tapePathKey = flag.String("tape-path-key", "tapes/path.key", "Path to the tape path key")
+var tapeFileKey = flag.String("tape-file-key", "/etc/tapemgr/file.key", "Path to the tape file key")
+var tapePathKey = flag.String("tape-path-key", "/etc/tapemgr/path.key", "Path to the tape path key")
+var tapesPath = flag.String("tapes-path", "/var/lib/tapemgr/tapes", "Path to the tapes directory")
 var cmdMode = flag.String("mode", "help", "Mode to run in (scan, statistics, backup, restore-tape, restore-file, mount, format)")
 var dryRun = flag.Bool("dry-run", false, "Dry run mode (do not perform any write operations)")
 
@@ -61,7 +62,7 @@ func main() {
 		log.Fatalf("Failed to create tape drive: %v", err)
 	}
 
-	inv, err = inventory.New()
+	inv, err = inventory.New(*tapesPath)
 	if err != nil {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}

@@ -15,7 +15,7 @@ pkgname=tapemgr
 pkgver="${latest_tag}.${commits_since_tag}${tag_suffix}"
 pkgrel="1"
 pkgdesc='Tape backup manager'
-arch=('any')
+arch=('x86_64' 'arm64')
 url='https://github.com/FoxDenHome/tapemgr.git'
 license=('GPL-3.0-or-later')
 makedepends=('git' 'go')
@@ -32,4 +32,5 @@ build() {
 package() {
   cd "${srcdir}"
   install -Dm755 ./tapemgr "${pkgdir}/usr/bin/tapemgr"
+  mkdir -p "${pkgdir}/etc/tapemgr" "${pkgdir}/var/lib/tapemgr/tapes"
 }

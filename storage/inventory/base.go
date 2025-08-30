@@ -20,9 +20,9 @@ type Inventory struct {
 	tapes map[string]*Tape
 }
 
-func New() (*Inventory, error) {
+func New(path string) (*Inventory, error) {
 	inv := &Inventory{
-		path:  "tapes",
+		path:  path,
 		tapes: make(map[string]*Tape),
 	}
 	return inv, inv.Reload()
