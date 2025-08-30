@@ -30,7 +30,9 @@ build() {
 }
 
 package() {
+  backup=('etc/tapemgr/config.json')
   cd "${srcdir}"
-  install -Dm755 ./tapemgr "${pkgdir}/usr/bin/tapemgr"
   mkdir -p "${pkgdir}/etc/tapemgr" "${pkgdir}/var/lib/tapemgr/tapes"
+  install -Dm755 ./tapemgr "${pkgdir}/usr/bin/tapemgr"
+  install -Dm600 ./config.json "${pkgdir}/etc/tapemgr/config.json"
 }

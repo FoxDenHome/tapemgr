@@ -1,0 +1,9 @@
+{
+  "tapes-path": "/var/lib/tapemgr/tapes",
+  "tape-file-key": "AGE_PRIVATEKEY_HERE",
+  "tape-path-key": "$ dd if=/dev/random of=/dev/stdout bs=16 count=1 | base64",
+  "tape-mount": "/mnt/tape",
+  "loader-device": "/dev/sch0",
+  "drive-device": "/dev/nst0",
+  "dry-run": false
+}

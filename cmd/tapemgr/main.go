@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"flag"
 	"log"
 	"os"
@@ -14,40 +15,40 @@ import (
 	"github.com/FoxDenHome/tapemgr/util"
 )
 
-var loaderDeviceStr = flag.String("loader-device", "/dev/sch0", "Path to the SCSI tape loader device")
-var driveDeviceStr = flag.String("drive-device", "/dev/nst0", "Path to the SCSI tape drive device")
-var tapeMount = flag.String("tape-mount", "/mnt/tape", "Path to the tape mount point")
-var tapeFileKey = flag.String("tape-file-key", "/etc/tapemgr/file.key", "Path to the tape file key")
-var tapePathKey = flag.String("tape-path-key", "/etc/tapemgr/path.key", "Path to the tape path key")
-var tapesPath = flag.String("tapes-path", "/var/lib/tapemgr/tapes", "Path to the tapes directory")
-var cmdMode = flag.String("mode", "help", "Mode to run in (scan, statistics, backup, restore-tape, restore-file, mount, format)")
-var dryRun = flag.Bool("dry-run", false, "Dry run mode (do not perform any write operations)")
-
 var fileMapper *mapper.FileMapper
-var inv *inventory.Inventory
 
 func main() {
+	configFile := os.Getenv("TAPEMGR_CONFIG")
+	if configFile == "" {
+		configFile = "/etc/tapemgr/config.yml"
+	}
+	config, err := loadConfig(configFile)
+	if err != nil {
+		log.Fatalf("Failed to load config %s: %v", configFile, err)
+	}
+
+	loaderDeviceStr := flag.String("loader-device", config.LoaderDevice, "Path to the SCSI tape loader device")
+	driveDeviceStr := flag.String("drive-device", config.DriveDevice, "Path to the SCSI tape drive device")
+	tapeMount := flag.String("tape-mount", config.TapeMount, "Path to the tape mount point")
+	tapesPath := flag.String("tapes-path", config.TapesPath, "Path to the tapes directory")
+	cmdMode := flag.String("mode", "help", "Mode to run in (scan, statistics, backup, restore-tape, restore-file, mount, format)")
+	dryRun := flag.Bool("dry-run", config.DryRun, "Dry run mode (do not perform any write operations)")
 	flag.Parse()
 	mapper.DryRun = *dryRun
 
 	log.Printf("tapemgr (version %s / git %s) starting up", util.GetVersion(), util.GetGitRev())
 
-	identity, err := os.ReadFile(*tapeFileKey)
-	if err != nil {
-		log.Fatalf("Failed to read tape file key: %v", err)
-	}
-
-	fileCryptor, err := encryption.NewFileCryptor(strings.Trim(string(identity), "\r\t\n "))
+	fileCryptor, err := encryption.NewFileCryptor(config.TapeFileKey)
 	if err != nil {
 		log.Fatalf("Failed to create file cryptor: %v", err)
 	}
 
-	filenameKey, err := os.ReadFile(*tapePathKey)
+	b64decoded, err := base64.StdEncoding.DecodeString(config.TapePathKey)
 	if err != nil {
-		log.Fatalf("Failed to read tape path key: %v", err)
+		log.Fatalf("Failed to base64 decode tape path key: %v", err)
 	}
 
-	nameCryptor, err := encryption.NewPathCryptor(filenameKey)
+	nameCryptor, err := encryption.NewPathCryptor(b64decoded)
 	if err != nil {
 		log.Fatalf("Failed to create path cryptor: %v", err)
 	}
@@ -62,7 +63,7 @@ func main() {
 		log.Fatalf("Failed to create tape drive: %v", err)
 	}
 
-	inv, err = inventory.New(*tapesPath)
+	inv, err := inventory.New(*tapesPath)
 	if err != nil {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
