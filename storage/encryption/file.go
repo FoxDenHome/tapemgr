@@ -3,11 +3,16 @@ package encryption
 import (
 	"errors"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"filippo.io/age"
+	"github.com/pkg/xattr"
 )
+
+const MOD_TIME_XATTR = "user.tapemgr.modtime"
 
 type FileCryptor struct {
 	identity  age.Identity
@@ -36,10 +41,20 @@ func NewFileCryptorEncryptOnly(recipientStr string) (*FileCryptor, error) {
 }
 
 func (c *FileCryptor) Encrypt(src, dest string) error {
-	err := c.encrypt(src, dest)
+	stat, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	err = c.encrypt(src, dest)
 	if err != nil {
 		_ = os.Remove(dest)
 		return err
+	}
+
+	err = xattr.Set(dest, MOD_TIME_XATTR, []byte(stat.ModTime().UTC().Format(time.RFC3339)))
+	if err != nil {
+		log.Printf("Failed to set "+MOD_TIME_XATTR+" xattr: %v", err)
 	}
 	return nil
 }
@@ -51,13 +66,38 @@ func (c *FileCryptor) EncryptMkdirAll(src, dest string) error {
 	return c.Encrypt(src, dest)
 }
 
+func copyModTimes(src, dest string) error {
+	stat, err := os.Stat(src)
+	if err != nil {
+		_ = os.Remove(dest)
+		return err
+	}
+	return os.Chtimes(dest, stat.ModTime(), stat.ModTime())
+}
+
 func (c *FileCryptor) Decrypt(src, dest string) error {
 	err := c.decrypt(src, dest)
 	if err != nil {
 		_ = os.Remove(dest)
 		return err
 	}
-	return nil
+
+	modTimeBytes, err := xattr.Get(src, MOD_TIME_XATTR)
+	if err != nil {
+		if !errors.Is(err, xattr.ENOATTR) {
+			log.Printf("Failed to get "+MOD_TIME_XATTR+" xattr: %v", err)
+		}
+
+		return copyModTimes(src, dest)
+	}
+
+	modTime, err := time.Parse(time.RFC3339, string(modTimeBytes))
+	if err != nil {
+		log.Printf("Invalid "+MOD_TIME_XATTR+" xattr %s: %v", string(modTimeBytes), err)
+		return copyModTimes(src, dest)
+	}
+
+	return os.Chtimes(dest, modTime, modTime)
 }
 
 func (c *FileCryptor) DecryptMkdirAll(src, dest string) error {

@@ -113,7 +113,7 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		path: path,
 
 		Size:         stat.Size(),
-		ModifiedTime: stat.ModTime(),
+		ModifiedTime: stat.ModTime().UTC(),
 	}
 
 	return nil
