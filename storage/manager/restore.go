@@ -12,10 +12,10 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
-type FilterFunc func(path string, info *inventory.FileInfo) bool
+type FilterFunc func(path string, info *inventory.File) bool
 
 type restoreFile struct {
-	*inventory.ExtendedFileInfo
+	*inventory.ExtendedFile
 	decryptedPath string
 }
 
@@ -24,13 +24,13 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 		return fmt.Errorf("target path %s is not absolute", target)
 	}
 
-	allFileMap := make(map[string]map[string]*inventory.FileInfo)
+	allFileMap := make(map[string]map[string]*inventory.File)
 
 	allFiles := m.inventory.GetBestFiles(m.path)
 	for decryptedPath, file := range allFiles {
 		tape := file.GetTape()
 		if _, ok := allFileMap[tape.Barcode]; !ok {
-			allFileMap[tape.Barcode] = make(map[string]*inventory.FileInfo)
+			allFileMap[tape.Barcode] = make(map[string]*inventory.File)
 		}
 		allFileMap[tape.Barcode][decryptedPath] = file
 	}
@@ -45,7 +45,7 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 
 		fileInfos := make([]*restoreFile, 0, len(filesMap))
 		for decryptedPath, file := range filesMap {
-			var fileInfo *inventory.ExtendedFileInfo
+			var fileInfo *inventory.ExtendedFile
 			if DryRun {
 				sb, _ := rand.Int(rand.Reader, big.NewInt(1<<32-1))
 				sb64 := sb.Int64()
@@ -53,8 +53,8 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 				if sb64%2 == 1 {
 					part = "b"
 				}
-				fileInfo = &inventory.ExtendedFileInfo{
-					Path:       file.GetPath(),
+				fileInfo = &inventory.ExtendedFile{
+					File:       file,
 					Partition:  part,
 					StartBlock: int(sb64),
 				}
@@ -65,8 +65,8 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 				}
 			}
 			fileInfos = append(fileInfos, &restoreFile{
-				ExtendedFileInfo: fileInfo,
-				decryptedPath:    decryptedPath,
+				ExtendedFile:  fileInfo,
+				decryptedPath: decryptedPath,
 			})
 		}
 
@@ -79,7 +79,7 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 		})
 
 		for _, fileInfo := range fileInfos {
-			filePath := filepath.Join(m.drive.MountPoint(), fileInfo.Path)
+			filePath := filepath.Join(m.drive.MountPoint(), fileInfo.GetPath())
 			log.Printf("[COPY] %s", filePath)
 			if DryRun {
 				continue

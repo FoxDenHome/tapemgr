@@ -145,7 +145,7 @@ func main() {
 			tapesMap[tape] = true
 		}
 
-		err := fileManager.Restore(func(path string, info *inventory.FileInfo) bool {
+		err := fileManager.Restore(func(path string, info *inventory.File) bool {
 			return tapesMap[info.GetTape().Barcode]
 		}, target)
 		if err != nil {
@@ -163,7 +163,7 @@ func main() {
 			filesMap[file] = true
 		}
 
-		err := fileManager.Restore(func(path string, info *inventory.FileInfo) bool {
+		err := fileManager.Restore(func(path string, info *inventory.File) bool {
 			return filesMap[path]
 		}, target)
 		if err != nil {

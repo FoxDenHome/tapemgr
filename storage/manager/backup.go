@@ -43,7 +43,7 @@ func (m *Manager) Backup(targets ...string) error {
 	return nil
 }
 
-func (m *Manager) backupDir(target string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
+func (m *Manager) backupDir(target string, handledFiles map[string]bool, bestFiles map[string]*inventory.File) error {
 	entries, err := os.ReadDir(target)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (m *Manager) backupDir(target string, handledFiles map[string]bool, bestFil
 	return nil
 }
 
-func (m *Manager) tombstonePath(path string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
+func (m *Manager) tombstonePath(path string, handledFiles map[string]bool, bestFiles map[string]*inventory.File) error {
 	path = filepath.Clean(path)
 
 	var err error
@@ -113,7 +113,7 @@ func (m *Manager) tombstonePath(path string, handledFiles map[string]bool, bestF
 	return m.currentTape.AddFiles(m.drive, newFiles...)
 }
 
-func (m *Manager) backupFile(path string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
+func (m *Manager) backupFile(path string, handledFiles map[string]bool, bestFiles map[string]*inventory.File) error {
 	path = filepath.Clean(path)
 
 	if !filepath.IsAbs(path) {

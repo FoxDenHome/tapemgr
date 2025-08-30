@@ -1,19 +1,13 @@
 package inventory
 
 import (
+	"log"
 	"os"
 	"slices"
 	"strings"
+
+	"github.com/FoxDenHome/tapemgr/storage/encryption"
 )
-
-type Tape struct {
-	inventory *Inventory
-
-	Barcode string               `json:"barcode"`
-	Files   map[string]*FileInfo `json:"files"`
-	Size    int64                `json:"size"`
-	Free    int64                `json:"free"`
-}
 
 type Inventory struct {
 	path  string
@@ -61,7 +55,7 @@ func (i *Inventory) GetOrCreateTape(barcode string) *Tape {
 	tape = &Tape{
 		inventory: i,
 		Barcode:   barcode,
-		Files:     make(map[string]*FileInfo),
+		Files:     make(map[string]*File),
 	}
 	i.tapes[barcode] = tape
 	return tape
@@ -80,6 +74,31 @@ func (i *Inventory) GetTapesSortByFreeDesc() []*Tape {
 		return int(b.Free) - int(a.Free)
 	})
 	return tapes
+}
+
+func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string]*File {
+	files := make(map[string]*File)
+	for _, tape := range i.tapes {
+		for name, info := range tape.Files {
+			clearName, err := pathCryptor.Decrypt(name)
+			if err != nil {
+				log.Printf("failed to decrypt path %q: %v", name, err)
+				continue
+			}
+			oldInfo, ok := files[clearName]
+			if !ok || info.IsBetterThan(oldInfo) {
+				files[clearName] = info
+			}
+		}
+	}
+
+	for name, file := range files {
+		if file.isTombstone() {
+			delete(files, name)
+		}
+	}
+
+	return files
 }
 
 func (i *Inventory) Save() error {

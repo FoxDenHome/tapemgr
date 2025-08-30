@@ -10,6 +10,15 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+type Tape struct {
+	inventory *Inventory
+
+	Barcode string           `json:"barcode"`
+	Files   map[string]*File `json:"files"`
+	Size    int64            `json:"size"`
+	Free    int64            `json:"free"`
+}
+
 func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
 	fh, err := os.Open(filepath.Join(inv.path, filename))
 	if err != nil {
@@ -61,7 +70,7 @@ func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
 }
 
 func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
-	t.Files = make(map[string]*FileInfo)
+	t.Files = make(map[string]*File)
 	err := t.reloadStats(drive)
 	if err != nil {
 		return err
@@ -99,7 +108,7 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	t.Files[path] = &FileInfo{
+	t.Files[path] = &File{
 		tape: t,
 		path: path,
 

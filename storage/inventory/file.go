@@ -1,17 +1,15 @@
 package inventory
 
 import (
-	"log"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
-	"github.com/FoxDenHome/tapemgr/storage/encryption"
 	"github.com/pkg/xattr"
 )
 
-type FileInfo struct {
+type File struct {
 	ModifiedTime time.Time `json:"modified_time"`
 	Size         int64     `json:"size"`
 
@@ -19,54 +17,30 @@ type FileInfo struct {
 	path string
 }
 
-func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string]*FileInfo {
-	files := make(map[string]*FileInfo)
-	for _, tape := range i.tapes {
-		for name, info := range tape.Files {
-			clearName, err := pathCryptor.Decrypt(name)
-			if err != nil {
-				log.Printf("failed to decrypt path %q: %v", name, err)
-				continue
-			}
-			oldInfo, ok := files[clearName]
-			if !ok || info.IsBetterThan(oldInfo) {
-				files[clearName] = info
-			}
-		}
-	}
+type ExtendedFile struct {
+	*File
 
-	for name, file := range files {
-		if file.isTombstone() {
-			delete(files, name)
-		}
-	}
-
-	return files
-}
-
-func (i *FileInfo) isTombstone() bool {
-	return i.Size <= 0
-}
-
-func (f *FileInfo) IsBetterThan(other *FileInfo) bool {
-	return f.ModifiedTime.After(other.ModifiedTime)
-}
-
-func (f *FileInfo) GetTape() *Tape {
-	return f.tape
-}
-
-func (f *FileInfo) GetPath() string {
-	return f.path
-}
-
-type ExtendedFileInfo struct {
-	Path       string
 	StartBlock int
 	Partition  string
 }
 
-func (f *FileInfo) GetExtended(drive *drive.TapeDrive) (*ExtendedFileInfo, error) {
+func (i *File) isTombstone() bool {
+	return i.Size <= 0
+}
+
+func (f *File) IsBetterThan(other *File) bool {
+	return f.ModifiedTime.After(other.ModifiedTime)
+}
+
+func (f *File) GetTape() *Tape {
+	return f.tape
+}
+
+func (f *File) GetPath() string {
+	return f.path
+}
+
+func (f *File) GetExtended(drive *drive.TapeDrive) (*ExtendedFile, error) {
 	partitionXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.path), "user.ltfs.partition")
 	if err != nil {
 		return nil, err
@@ -80,8 +54,8 @@ func (f *FileInfo) GetExtended(drive *drive.TapeDrive) (*ExtendedFileInfo, error
 		return nil, err
 	}
 
-	return &ExtendedFileInfo{
-		Path:       f.path,
+	return &ExtendedFile{
+		File:       f,
 		StartBlock: int(startBlockNum),
 		Partition:  string(partitionXattr),
 	}, nil
