@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/FoxDenHome/tapemgr/storage/inventory"
+	"github.com/FoxDenHome/tapemgr/util"
 )
 
 func (m *Manager) Backup(target string) error {
@@ -17,19 +20,21 @@ func (m *Manager) Backup(target string) error {
 
 	handledFiles := make(map[string]bool)
 
+	bestFiles := m.inventory.GetBestFiles(m.path)
+
 	if !info.IsDir() {
-		return m.backupFile(target, handledFiles)
+		return m.backupFile(target, handledFiles, bestFiles)
 	}
 
-	err = m.backupDir(target, handledFiles)
+	err = m.backupDir(target, handledFiles, bestFiles)
 	if err != nil {
 		return err
 	}
 
-	return m.tombstonePath(target, handledFiles)
+	return m.tombstonePath(target, handledFiles, bestFiles)
 }
 
-func (m *Manager) backupDir(target string, handledFiles map[string]bool) error {
+func (m *Manager) backupDir(target string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
 	entries, err := os.ReadDir(target)
 	if err != nil {
 		return err
@@ -37,9 +42,9 @@ func (m *Manager) backupDir(target string, handledFiles map[string]bool) error {
 	for _, entry := range entries {
 		subTarget := filepath.Join(target, entry.Name())
 		if entry.IsDir() {
-			err = m.backupDir(subTarget, handledFiles)
+			err = m.backupDir(subTarget, handledFiles, bestFiles)
 		} else {
-			err = m.backupFile(subTarget, handledFiles)
+			err = m.backupFile(subTarget, handledFiles, bestFiles)
 		}
 		if err != nil {
 			return err
@@ -49,7 +54,7 @@ func (m *Manager) backupDir(target string, handledFiles map[string]bool) error {
 	return nil
 }
 
-func (m *Manager) tombstonePath(path string, handledFiles map[string]bool) error {
+func (m *Manager) tombstonePath(path string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
 	path = filepath.Clean(path)
 
 	var err error
@@ -60,18 +65,15 @@ func (m *Manager) tombstonePath(path string, handledFiles map[string]bool) error
 	mainPath := m.path.Encrypt(path) + "/"
 
 	newFiles := make([]string, 0)
-
-	allFiles := m.inventory.GetBestFiles(m.path)
-	for clearRelPath := range allFiles {
-		clearAbsPath := filepath.Join("/", clearRelPath)
-		if handledFiles[clearAbsPath] {
+	for clearRelPath := range bestFiles {
+		if handledFiles[clearRelPath] {
 			continue
 		}
 		if !strings.HasPrefix(clearRelPath, mainPath) {
 			continue
 		}
 
-		log.Printf("[TOMB] %s", clearAbsPath)
+		log.Printf("[TOMB] /%s", clearRelPath)
 		encryptedRelPath := m.path.Encrypt(clearRelPath)
 
 		err = m.loadForSize(TOMBSTONE_SIZE_SPARE)
@@ -102,10 +104,9 @@ func (m *Manager) tombstonePath(path string, handledFiles map[string]bool) error
 	return m.currentTape.AddFiles(m.drive, newFiles...)
 }
 
-func (m *Manager) backupFile(path string, handledFiles map[string]bool) error {
+func (m *Manager) backupFile(path string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
 	path = filepath.Clean(path)
 
-	var err error
 	if !filepath.IsAbs(path) {
 		return fmt.Errorf("path %s is not absolute", path)
 	}
@@ -116,9 +117,12 @@ func (m *Manager) backupFile(path string, handledFiles map[string]bool) error {
 	}
 
 	encryptedRelPath := m.path.Encrypt(path)
-	handledFiles[path] = true
 
-	existingInfo := m.inventory.GetFile(path, m.path)
+	relPath, _ := util.StripLeadingSlashes(path)
+	existingInfo := bestFiles[relPath]
+
+	handledFiles[relPath] = true
+
 	if existingInfo != nil && (candidateInfo.ModTime().Sub(existingInfo.ModifiedTime)) < time.Second {
 		// log.Printf("[SKIP] %s", path)
 		return nil

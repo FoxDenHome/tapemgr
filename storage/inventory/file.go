@@ -49,24 +49,6 @@ func (i *Inventory) GetBestFilesOn(barcode string, pathCryptor *encryption.PathC
 	return files
 }
 
-func (i *Inventory) GetFile(clearName string, pathCryptor *encryption.PathCryptor) *FileInfo {
-	var best *FileInfo
-	for _, tape := range i.tapes {
-		for encryptVersion := encryption.VERSION_LATEST; encryptVersion >= encryption.VERSION_MIN; encryptVersion-- {
-			if info, ok := tape.Files[pathCryptor.EncryptVersion(clearName, encryptVersion)]; ok {
-				if best == nil || info.IsBetterThan(best) {
-					best = info
-				}
-			}
-		}
-	}
-
-	if best == nil || best.isTombstone() {
-		return nil
-	}
-	return best
-}
-
 func (i *FileInfo) isTombstone() bool {
 	return i.Size <= 0
 }

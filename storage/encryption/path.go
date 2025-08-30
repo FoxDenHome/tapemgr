@@ -54,8 +54,9 @@ func (c *PathCryptor) encrypt(path string, version Version) string {
 
 	parts := strings.Split(path, "/")
 
-	encryptedParts := []string{
-		fmt.Sprintf("=%d", version),
+	encryptedParts := []string{}
+	if version > VERSION_MIN {
+		encryptedParts = append(encryptedParts, fmt.Sprintf("=%d", version))
 	}
 	for _, part := range parts {
 		encryptedPart := c.encryptPart(part, version, encrypter)
