@@ -5,6 +5,3 @@
 /src
 /pkg
 *.pkg.tar*
-/.lastcheck
-/.done.gitrev
-/.done.pkgver
