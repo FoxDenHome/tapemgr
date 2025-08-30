@@ -4,6 +4,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/FoxDenHome/tapemgr/util"
@@ -52,7 +54,9 @@ func (c *PathCryptor) encrypt(path string, version Version) string {
 
 	parts := strings.Split(path, "/")
 
-	encryptedParts := make([]string, 0, len(parts))
+	encryptedParts := []string{
+		fmt.Sprintf("=%d", version),
+	}
 	for _, part := range parts {
 		encryptedPart := c.encryptPart(part, version, encrypter)
 		for len(encryptedPart) > c.maxPathPartLen {
@@ -65,12 +69,21 @@ func (c *PathCryptor) encrypt(path string, version Version) string {
 }
 
 func (c *PathCryptor) Decrypt(path string) string {
+	path, _ = util.StripLeadingSlashes(path)
+
 	// If we add more versions, got to auto-determine!
-	version := VERSION_LATEST
+	version := VERSION_MIN
+	if path[0] == '=' {
+		pathSlash := strings.Index(path, "/")
+		if pathSlash != -1 {
+			versionInt, _ := strconv.Atoi(path[1:pathSlash])
+			version = Version(versionInt)
+		}
+		path = path[pathSlash:]
+		path, _ = util.StripLeadingSlashes(path)
+	}
 
 	decrypter := cipher.NewCBCDecrypter(c.cipher, c.iv)
-
-	path, _ = util.StripLeadingSlashes(path)
 
 	pathNormalized := strings.ReplaceAll(path, ",/,", "")
 	parts := strings.Split(pathNormalized, "/")
