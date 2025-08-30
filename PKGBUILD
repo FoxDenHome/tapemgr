@@ -19,6 +19,7 @@ arch=('x86_64' 'arm64')
 url='https://github.com/FoxDenHome/tapemgr.git'
 license=('GPL-3.0-or-later')
 makedepends=('git' 'go')
+depends=('ltfs')
 source=(
   'config.json'
 )
