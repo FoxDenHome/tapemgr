@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
+	"github.com/FoxDenHome/tapemgr/storage/encryption"
 	"github.com/pkg/xattr"
 )
 
@@ -17,19 +18,20 @@ type FileInfo struct {
 	path string
 }
 
-func (i *Inventory) GetBestFiles() map[string]*FileInfo {
+func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string]*FileInfo {
 	files := make(map[string]*FileInfo)
 	for _, tape := range i.tapes {
 		for name, info := range tape.Files {
-			oldInfo, ok := files[name]
+			clearName := pathCryptor.Decrypt(name)
+			oldInfo, ok := files[clearName]
 			if !ok || info.IsBetterThan(oldInfo) {
-				files[name] = info
+				files[clearName] = info
 			}
 		}
 	}
 
 	for name, file := range files {
-		if file.IsTombstone() {
+		if file.isTombstone() {
 			delete(files, name)
 		}
 	}
@@ -37,8 +39,8 @@ func (i *Inventory) GetBestFiles() map[string]*FileInfo {
 	return files
 }
 
-func (i *Inventory) GetBestFilesOn(barcode string) map[string]*FileInfo {
-	files := i.GetBestFiles()
+func (i *Inventory) GetBestFilesOn(barcode string, pathCryptor *encryption.PathCryptor) map[string]*FileInfo {
+	files := i.GetBestFiles(pathCryptor)
 	for name, info := range files {
 		if info.tape.Barcode != barcode {
 			delete(files, name)
@@ -47,23 +49,25 @@ func (i *Inventory) GetBestFilesOn(barcode string) map[string]*FileInfo {
 	return files
 }
 
-func (i *Inventory) GetFile(name string) *FileInfo {
+func (i *Inventory) GetFile(clearName string, pathCryptor *encryption.PathCryptor) *FileInfo {
 	var best *FileInfo
 	for _, tape := range i.tapes {
-		if info, ok := tape.Files[name]; ok {
-			if best == nil || info.IsBetterThan(best) {
-				best = info
+		for encryptVersion := encryption.VERSION_LATEST; encryptVersion >= encryption.VERSION_MIN; encryptVersion-- {
+			if info, ok := tape.Files[pathCryptor.EncryptVersion(clearName, encryptVersion)]; ok {
+				if best == nil || info.IsBetterThan(best) {
+					best = info
+				}
 			}
 		}
 	}
 
-	if best == nil || best.IsTombstone() {
+	if best == nil || best.isTombstone() {
 		return nil
 	}
 	return best
 }
 
-func (i *FileInfo) IsTombstone() bool {
+func (i *FileInfo) isTombstone() bool {
 	return i.Size <= 0
 }
 

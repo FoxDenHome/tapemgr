@@ -57,24 +57,22 @@ func (m *Manager) tombstonePath(path string, handledFiles map[string]bool) error
 		return fmt.Errorf("path %s is not absolute", path)
 	}
 
-	encryptedMainPath := m.path.Encrypt(path) + "/"
+	mainPath := m.path.Encrypt(path) + "/"
 
 	newFiles := make([]string, 0)
 
-	allFiles := m.inventory.GetBestFiles()
-	for encryptedRelPath, file := range allFiles {
-		if handledFiles[encryptedRelPath] {
+	allFiles := m.inventory.GetBestFiles(m.path)
+	for clearRelPath := range allFiles {
+		clearAbsPath := filepath.Join("/", clearRelPath)
+		if handledFiles[clearAbsPath] {
 			continue
 		}
-		if !strings.HasPrefix(encryptedRelPath, encryptedMainPath) {
-			continue
-		}
-		if file.IsTombstone() {
+		if !strings.HasPrefix(clearRelPath, mainPath) {
 			continue
 		}
 
-		clearRelPath := m.path.Decrypt(encryptedRelPath)
-		log.Printf("[TOMB] /%s", clearRelPath)
+		log.Printf("[TOMB] %s", clearAbsPath)
+		encryptedRelPath := m.path.Encrypt(clearRelPath)
 
 		err = m.loadForSize(TOMBSTONE_SIZE_SPARE)
 		if err != nil {
@@ -118,9 +116,9 @@ func (m *Manager) backupFile(path string, handledFiles map[string]bool) error {
 	}
 
 	encryptedRelPath := m.path.Encrypt(path)
-	handledFiles[encryptedRelPath] = true
+	handledFiles[path] = true
 
-	existingInfo := m.inventory.GetFile(encryptedRelPath)
+	existingInfo := m.inventory.GetFile(path, m.path)
 	if existingInfo != nil && (candidateInfo.ModTime().Sub(existingInfo.ModifiedTime)) < time.Second {
 		// log.Printf("[SKIP] %s", path)
 		return nil
