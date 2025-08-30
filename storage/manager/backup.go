@@ -15,19 +15,21 @@ func (m *Manager) Backup(target string) error {
 		return err
 	}
 
+	handledFiles := make(map[string]bool)
+
 	if !info.IsDir() {
-		return m.backupFile(target)
+		return m.backupFile(target, handledFiles)
 	}
 
-	err = m.backupDir(target)
+	err = m.backupDir(target, handledFiles)
 	if err != nil {
 		return err
 	}
 
-	return m.tombstonePath(target)
+	return m.tombstonePath(target, handledFiles)
 }
 
-func (m *Manager) backupDir(target string) error {
+func (m *Manager) backupDir(target string, handledFiles map[string]bool) error {
 	entries, err := os.ReadDir(target)
 	if err != nil {
 		return err
@@ -35,9 +37,9 @@ func (m *Manager) backupDir(target string) error {
 	for _, entry := range entries {
 		subTarget := filepath.Join(target, entry.Name())
 		if entry.IsDir() {
-			err = m.backupDir(subTarget)
+			err = m.backupDir(subTarget, handledFiles)
 		} else {
-			err = m.backupFile(subTarget)
+			err = m.backupFile(subTarget, handledFiles)
 		}
 		if err != nil {
 			return err
@@ -47,7 +49,7 @@ func (m *Manager) backupDir(target string) error {
 	return nil
 }
 
-func (m *Manager) tombstonePath(path string) error {
+func (m *Manager) tombstonePath(path string, handledFiles map[string]bool) error {
 	path = filepath.Clean(path)
 
 	var err error
@@ -61,7 +63,7 @@ func (m *Manager) tombstonePath(path string) error {
 
 	allFiles := m.inventory.GetBestFiles()
 	for encryptedRelPath, file := range allFiles {
-		if m.handledFiles[encryptedRelPath] {
+		if handledFiles[encryptedRelPath] {
 			continue
 		}
 		if !strings.HasPrefix(encryptedRelPath, encryptedMainPath) {
@@ -102,7 +104,7 @@ func (m *Manager) tombstonePath(path string) error {
 	return m.currentTape.AddFiles(m.drive, newFiles...)
 }
 
-func (m *Manager) backupFile(path string) error {
+func (m *Manager) backupFile(path string, handledFiles map[string]bool) error {
 	path = filepath.Clean(path)
 
 	var err error
@@ -116,7 +118,7 @@ func (m *Manager) backupFile(path string) error {
 	}
 
 	encryptedRelPath := m.path.Encrypt(path)
-	m.handledFiles[encryptedRelPath] = true
+	handledFiles[encryptedRelPath] = true
 
 	existingInfo := m.inventory.GetFile(encryptedRelPath)
 	if existingInfo != nil && (candidateInfo.ModTime().Sub(existingInfo.ModifiedTime)) < time.Second {

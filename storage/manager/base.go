@@ -21,8 +21,6 @@ type Manager struct {
 	loaderDriveAddress uint16
 
 	currentTape *inventory.Tape
-
-	handledFiles map[string]bool
 }
 
 func New(
@@ -50,7 +48,5 @@ func New(
 		loader:             loader,
 		drive:              drive,
 		loaderDriveAddress: address,
-
-		handledFiles: make(map[string]bool),
 	}, nil
 }
