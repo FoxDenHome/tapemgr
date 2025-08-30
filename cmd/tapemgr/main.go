@@ -156,15 +156,22 @@ func main() {
 		defer putLibraryToIdle()
 
 		target := flag.Arg(0)
+
 		files := flag.Args()[1:]
-		filesMap := make(map[string]bool)
-		for _, file := range files {
-			file, _ = util.StripLeadingSlashes(file)
-			filesMap[file] = true
+		for i, file := range files {
+			files[i] = strings.Trim(file, "/")
 		}
 
 		err := fileManager.Restore(func(path string, info *inventory.File) bool {
-			return filesMap[path]
+			for _, file := range files {
+				if file == path {
+					return true
+				}
+				if strings.HasPrefix(path, file+"/") {
+					return true
+				}
+			}
+			return false
 		}, target)
 		if err != nil {
 			log.Fatalf("Failed to restore files: %v", err)

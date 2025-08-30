@@ -28,6 +28,9 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 
 	allFiles := m.inventory.GetBestFiles(m.path)
 	for decryptedPath, file := range allFiles {
+		if !filter(decryptedPath, file) {
+			continue
+		}
 		tape := file.GetTape()
 		if _, ok := allFileMap[tape.Barcode]; !ok {
 			allFileMap[tape.Barcode] = make(map[string]*inventory.File)
