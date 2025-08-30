@@ -1,0 +1,28 @@
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_call: {}
+
+name: Check
+
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: true
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          args: --timeout=30m
+      - name: Go build
+        run: go build ./cmd/tapemgr
+      - name: Go test
+        run: go test ./...
