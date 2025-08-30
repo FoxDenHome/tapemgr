@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"log"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -22,7 +23,11 @@ func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string
 	files := make(map[string]*FileInfo)
 	for _, tape := range i.tapes {
 		for name, info := range tape.Files {
-			clearName := pathCryptor.Decrypt(name)
+			clearName, err := pathCryptor.Decrypt(name)
+			if err != nil {
+				log.Printf("failed to decrypt path %q: %v", name, err)
+				continue
+			}
 			oldInfo, ok := files[clearName]
 			if !ok || info.IsBetterThan(oldInfo) {
 				files[clearName] = info
@@ -36,16 +41,6 @@ func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string
 		}
 	}
 
-	return files
-}
-
-func (i *Inventory) GetBestFilesOn(barcode string, pathCryptor *encryption.PathCryptor) map[string]*FileInfo {
-	files := i.GetBestFiles(pathCryptor)
-	for name, info := range files {
-		if info.tape.Barcode != barcode {
-			delete(files, name)
-		}
-	}
 	return files
 }
 

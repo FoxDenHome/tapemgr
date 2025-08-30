@@ -11,14 +11,12 @@ import (
 	"github.com/FoxDenHome/tapemgr/util"
 )
 
-type Version int
+type PathVersion int
 
 const (
-	VERSION_1 Version = 1
-	VERSION_2 Version = 2
+	PATH_VERSION_0 PathVersion = 0
 
-	VERSION_MIN    = VERSION_1
-	VERSION_LATEST = VERSION_2
+	PATH_VERSION_CURRENT = PATH_VERSION_0
 )
 
 type PathCryptor struct {
@@ -39,15 +37,11 @@ func NewPathCryptor(key []byte) (*PathCryptor, error) {
 	}, nil
 }
 
-func (c *PathCryptor) EncryptVersion(path string, version Version) string {
-	return c.encrypt(path, version)
-}
-
 func (c *PathCryptor) Encrypt(path string) string {
-	return c.encrypt(path, VERSION_LATEST)
+	return c.encrypt(path)
 }
 
-func (c *PathCryptor) encrypt(path string, version Version) string {
+func (c *PathCryptor) encrypt(path string) string {
 	encrypter := cipher.NewCBCEncrypter(c.cipher, c.iv)
 
 	path, _ = util.StripLeadingSlashes(path)
@@ -55,11 +49,11 @@ func (c *PathCryptor) encrypt(path string, version Version) string {
 	parts := strings.Split(path, "/")
 
 	encryptedParts := []string{}
-	if version > VERSION_MIN {
-		encryptedParts = append(encryptedParts, fmt.Sprintf("=%d", version))
-	}
+	// TODO: Once we add a new version, do this
+	// version := PATH_VERSION_CURRENT
+	// encryptedParts = append(encryptedParts, fmt.Sprintf("=%d", version))
 	for _, part := range parts {
-		encryptedPart := c.encryptPart(part, version, encrypter)
+		encryptedPart := c.encryptPart(part, encrypter)
 		for len(encryptedPart) > c.maxPathPartLen {
 			encryptedParts = append(encryptedParts, encryptedPart[:c.maxPathPartLen]+",")
 			encryptedPart = "," + encryptedPart[c.maxPathPartLen:]
@@ -69,21 +63,36 @@ func (c *PathCryptor) encrypt(path string, version Version) string {
 	return strings.Join(encryptedParts, "/")
 }
 
-func (c *PathCryptor) Decrypt(path string) string {
+func (c *PathCryptor) encryptPart(part string, encrypter cipher.BlockMode) string {
+	data := make([]byte, padToAESBlockSize(len(part)))
+	copy(data, part)
+	encrypter.CryptBlocks(data, data)
+	return base64.URLEncoding.EncodeToString(data)
+}
+
+func (c *PathCryptor) Decrypt(path string) (string, error) {
 	path, _ = util.StripLeadingSlashes(path)
 
-	// If we add more versions, got to auto-determine!
-	version := VERSION_MIN
+	version := PATH_VERSION_0
 	if path[0] == '=' {
 		pathSlash := strings.Index(path, "/")
 		if pathSlash != -1 {
 			versionInt, _ := strconv.Atoi(path[1:pathSlash])
-			version = Version(versionInt)
+			version = PathVersion(versionInt)
 		}
 		path = path[pathSlash:]
 		path, _ = util.StripLeadingSlashes(path)
 	}
 
+	switch version {
+	case PATH_VERSION_0:
+		return c.decrypt0(path), nil
+	default:
+		return "", fmt.Errorf("unknown path encryption version %d", version)
+	}
+}
+
+func (c *PathCryptor) decrypt0(path string) string {
 	decrypter := cipher.NewCBCDecrypter(c.cipher, c.iv)
 
 	pathNormalized := strings.ReplaceAll(path, ",/,", "")
@@ -91,19 +100,12 @@ func (c *PathCryptor) Decrypt(path string) string {
 
 	decryptedParts := make([]string, 0, len(parts))
 	for _, part := range parts {
-		decryptedParts = append(decryptedParts, c.decryptPart(part, version, decrypter))
+		decryptedParts = append(decryptedParts, c.decryptPart0(part, decrypter))
 	}
 	return strings.Join(decryptedParts, "/")
 }
 
-func (c *PathCryptor) encryptPart(part string, version Version, encrypter cipher.BlockMode) string {
-	data := make([]byte, padToAESBlockSize(len(part), version == VERSION_1))
-	copy(data, part)
-	encrypter.CryptBlocks(data, data)
-	return base64.URLEncoding.EncodeToString(data)
-}
-
-func (c *PathCryptor) decryptPart(part string, _ Version, decrypter cipher.BlockMode) string {
+func (c *PathCryptor) decryptPart0(part string, decrypter cipher.BlockMode) string {
 	data, _ := base64.URLEncoding.DecodeString(part)
 	decrypter.CryptBlocks(data, data)
 	return strings.TrimRight(string(data), "\x00")
