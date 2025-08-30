@@ -11,11 +11,11 @@ import (
 	"github.com/FoxDenHome/tapemgr/scsi/loader"
 	"github.com/FoxDenHome/tapemgr/storage/encryption"
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
-	"github.com/FoxDenHome/tapemgr/storage/mapper"
+	"github.com/FoxDenHome/tapemgr/storage/manager"
 	"github.com/FoxDenHome/tapemgr/util"
 )
 
-var fileMapper *mapper.FileMapper
+var fileManager *manager.Manager
 
 func main() {
 	configFile := os.Getenv("TAPEMGR_CONFIG")
@@ -34,7 +34,7 @@ func main() {
 	cmdMode := flag.String("mode", "help", "Mode to run in (scan, statistics, backup, restore-tape, restore-file, mount, format)")
 	dryRun := flag.Bool("dry-run", config.DryRun, "Dry run mode (do not perform any write operations)")
 	flag.Parse()
-	mapper.DryRun = *dryRun
+	manager.DryRun = *dryRun
 
 	log.Printf("tapemgr (version %s / git %s) starting up", util.GetVersion(), util.GetGitRev())
 
@@ -68,9 +68,9 @@ func main() {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
 
-	fileMapper, err = mapper.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice)
+	fileManager, err = manager.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice)
 	if err != nil {
-		log.Fatalf("Failed to create mapper: %v", err)
+		log.Fatalf("Failed to create manager: %v", err)
 	}
 
 	log.Printf("tapemgr startup done, parsing command")
@@ -84,7 +84,7 @@ func main() {
 			log.Fatalf("No barcode provided for scan")
 		}
 
-		err := fileMapper.ScanTape(barcode)
+		err := fileManager.ScanTape(barcode)
 		if err != nil {
 			log.Fatalf("Failed to scan tape %s: %v", barcode, err)
 		}
@@ -106,7 +106,7 @@ func main() {
 		targets := flag.Args()
 		for _, target := range targets {
 			log.Printf("Backing up target %v", target)
-			err = fileMapper.Backup(target)
+			err = fileManager.Backup(target)
 			if err != nil {
 				log.Fatalf("Failed to backup %v: %v", target, err)
 			}
@@ -120,7 +120,7 @@ func main() {
 			log.Fatalf("No barcode provided for scan")
 		}
 
-		err := fileMapper.MountTapeWait(barcode)
+		err := fileManager.MountTapeWait(barcode)
 		if err != nil {
 			log.Fatalf("Failed to mount tape %s: %v", barcode, err)
 		}
@@ -133,7 +133,7 @@ func main() {
 			log.Fatalf("No barcode provided for format")
 		}
 
-		err := fileMapper.FormatTape(barcode)
+		err := fileManager.FormatTape(barcode)
 		if err != nil {
 			log.Fatalf("Failed to format tape %s: %v", barcode, err)
 		}
@@ -148,7 +148,7 @@ func main() {
 			tapesMap[tape] = true
 		}
 
-		err := fileMapper.Restore(func(path string, info *inventory.FileInfo) bool {
+		err := fileManager.Restore(func(path string, info *inventory.FileInfo) bool {
 			return tapesMap[info.GetTape().Barcode]
 		}, target)
 		if err != nil {
@@ -166,7 +166,7 @@ func main() {
 			filesMap[file] = true
 		}
 
-		err := fileMapper.Restore(func(path string, info *inventory.FileInfo) bool {
+		err := fileManager.Restore(func(path string, info *inventory.FileInfo) bool {
 			return filesMap[path]
 		}, target)
 		if err != nil {
@@ -186,7 +186,7 @@ func main() {
 }
 
 func putLibraryToIdle() {
-	err := fileMapper.UnmountAndUnload()
+	err := fileManager.UnmountAndUnload()
 	if err != nil {
 		log.Printf("Error unmounting and unloading tape: %v", err)
 	}

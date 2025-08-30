@@ -1,4 +1,4 @@
-package mapper
+package manager
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ const (
 	TOMBSTONE_SIZE_SPARE = 4 * 1024 * 1024 // 4 MB
 )
 
-func (m *FileMapper) loadForSize(size int64) error {
+func (m *Manager) loadForSize(size int64) error {
 	if m.currentTape != nil && m.currentTape.Free >= size+TAPE_SIZE_SPARE {
 		return nil
 	}
@@ -49,7 +49,7 @@ func (m *FileMapper) loadForSize(size int64) error {
 	return nil
 }
 
-func (m *FileMapper) loadTape(tape *inventory.Tape) error {
+func (m *Manager) loadTape(tape *inventory.Tape) error {
 	if m.currentTape != nil && m.currentTape.Barcode == tape.Barcode {
 		return nil
 	}
@@ -75,7 +75,7 @@ func (m *FileMapper) loadTape(tape *inventory.Tape) error {
 	return nil
 }
 
-func (m *FileMapper) loadAndMount(tape *inventory.Tape) error {
+func (m *Manager) loadAndMount(tape *inventory.Tape) error {
 	if m.currentTape != nil && m.currentTape.Barcode == tape.Barcode {
 		return nil
 	}

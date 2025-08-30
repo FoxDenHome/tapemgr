@@ -1,11 +1,11 @@
-package mapper
+package manager
 
 import (
 	"fmt"
 	"log"
 )
 
-func (m *FileMapper) MountTapeWait(barcode string) error {
+func (m *Manager) MountTapeWait(barcode string) error {
 	tape := m.inventory.GetOrCreateTape(barcode)
 
 	if DryRun {
@@ -30,7 +30,7 @@ func (m *FileMapper) MountTapeWait(barcode string) error {
 	return nil
 }
 
-func (m *FileMapper) UnmountAndUnload() error {
+func (m *Manager) UnmountAndUnload() error {
 	m.currentTape = nil
 	if DryRun {
 		return nil

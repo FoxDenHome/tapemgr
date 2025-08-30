@@ -1,4 +1,4 @@
-package mapper
+package manager
 
 import (
 	"crypto/rand"
@@ -19,7 +19,7 @@ type restoreFile struct {
 	decryptedPath string
 }
 
-func (m *FileMapper) Restore(filter FilterFunc, target string) error {
+func (m *Manager) Restore(filter FilterFunc, target string) error {
 	if !filepath.IsAbs(target) {
 		return fmt.Errorf("target path %s is not absolute", target)
 	}
@@ -86,11 +86,12 @@ func (m *FileMapper) Restore(filter FilterFunc, target string) error {
 		})
 
 		for _, fileInfo := range fileInfos {
-			log.Printf("Copying file path=%s sb=%d part=%s from tape %s", fileInfo.decryptedPath, fileInfo.StartBlock, fileInfo.Partition, barcode)
+			filePath := filepath.Join(m.drive.MountPoint(), fileInfo.Path)
+			log.Printf("[COPY] %s", filePath)
 			if DryRun {
 				continue
 			}
-			err := m.file.DecryptMkdirAll(filepath.Join(m.drive.MountPoint(), fileInfo.Path), filepath.Join(target, fileInfo.decryptedPath))
+			err := m.file.DecryptMkdirAll(filePath, filepath.Join(target, fileInfo.decryptedPath))
 			if err != nil {
 				return err
 			}

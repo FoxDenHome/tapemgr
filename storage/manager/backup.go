@@ -1,4 +1,4 @@
-package mapper
+package manager
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (m *FileMapper) Backup(target string) error {
+func (m *Manager) Backup(target string) error {
 	info, err := os.Stat(target)
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func (m *FileMapper) Backup(target string) error {
 	return m.tombstonePath(target)
 }
 
-func (m *FileMapper) backupDir(target string) error {
+func (m *Manager) backupDir(target string) error {
 	entries, err := os.ReadDir(target)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (m *FileMapper) backupDir(target string) error {
 	return nil
 }
 
-func (m *FileMapper) tombstonePath(path string) error {
+func (m *Manager) tombstonePath(path string) error {
 	path = filepath.Clean(path)
 
 	var err error
@@ -102,7 +102,7 @@ func (m *FileMapper) tombstonePath(path string) error {
 	return m.currentTape.AddFiles(m.drive, newFiles...)
 }
 
-func (m *FileMapper) backupFile(path string) error {
+func (m *Manager) backupFile(path string) error {
 	path = filepath.Clean(path)
 
 	var err error

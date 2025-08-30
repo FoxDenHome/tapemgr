@@ -1,4 +1,4 @@
-package mapper
+package manager
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 
 var DryRun = true
 
-type FileMapper struct {
+type Manager struct {
 	file *encryption.FileCryptor
 	path *encryption.PathCryptor
 
@@ -31,7 +31,7 @@ func New(
 	inventory *inventory.Inventory,
 	loader *loader.TapeLoader,
 	drive *drive.TapeDrive,
-) (*FileMapper, error) {
+) (*Manager, error) {
 	serialNumber, err := drive.SerialNumber()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tape drive serial number: %v", err)
@@ -42,7 +42,7 @@ func New(
 		return nil, fmt.Errorf("failed to get tape drive address: %v", err)
 	}
 
-	return &FileMapper{
+	return &Manager{
 		file: file,
 		path: path,
 

@@ -1,8 +1,8 @@
-package mapper
+package manager
 
 import "fmt"
 
-func (m *FileMapper) FormatTape(barcode string) error {
+func (m *Manager) FormatTape(barcode string) error {
 	err := m.formatTapeKeepMounted(barcode)
 	_ = m.drive.Unmount()
 	if err != nil {
@@ -12,7 +12,7 @@ func (m *FileMapper) FormatTape(barcode string) error {
 	return nil
 }
 
-func (m *FileMapper) formatTapeKeepMounted(barcode string) error {
+func (m *Manager) formatTapeKeepMounted(barcode string) error {
 	tape := m.inventory.GetOrCreateTape(barcode)
 
 	err := m.loadTape(tape)

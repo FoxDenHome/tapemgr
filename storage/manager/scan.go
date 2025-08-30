@@ -1,10 +1,10 @@
-package mapper
+package manager
 
 import (
 	"log"
 )
 
-func (m *FileMapper) ScanTape(barcode string) error {
+func (m *Manager) ScanTape(barcode string) error {
 	tape := m.inventory.GetOrCreateTape(barcode)
 
 	err := m.loadAndMount(tape)
@@ -18,7 +18,7 @@ func (m *FileMapper) ScanTape(barcode string) error {
 	return m.scanCurrentTape()
 }
 
-func (m *FileMapper) scanCurrentTape() error {
+func (m *Manager) scanCurrentTape() error {
 	log.Printf("Re-inventorying tape %s", m.currentTape.Barcode)
 	defer log.Printf("Finished re-inventorying tape %s", m.currentTape.Barcode)
 	if DryRun {
