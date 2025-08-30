@@ -20,7 +20,7 @@ var fileMapper *mapper.FileMapper
 func main() {
 	configFile := os.Getenv("TAPEMGR_CONFIG")
 	if configFile == "" {
-		configFile = "/etc/tapemgr/config.yml"
+		configFile = "/etc/tapemgr/config.json"
 	}
 	config, err := loadConfig(configFile)
 	if err != nil {
