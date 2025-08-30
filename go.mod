@@ -7,7 +7,6 @@ require (
 	github.com/FoxDenHome/goscsi v0.0.0-20250829181816-793f93f54e74
 	github.com/pkg/xattr v0.4.12
 	golang.org/x/sys v0.35.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require golang.org/x/crypto v0.24.0 // indirect
