@@ -104,12 +104,9 @@ func main() {
 		defer putLibraryToIdle()
 
 		targets := flag.Args()
-		for _, target := range targets {
-			log.Printf("Backing up target %v", target)
-			err = fileManager.Backup(target)
-			if err != nil {
-				log.Fatalf("Failed to backup %v: %v", target, err)
-			}
+		err = fileManager.Backup(targets...)
+		if err != nil {
+			log.Fatalf("Failed to backup: %v", err)
 		}
 
 	case "mount":

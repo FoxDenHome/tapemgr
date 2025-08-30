@@ -12,26 +12,35 @@ import (
 	"github.com/FoxDenHome/tapemgr/util"
 )
 
-func (m *Manager) Backup(target string) error {
-	info, err := os.Stat(target)
-	if err != nil {
-		return err
-	}
-
-	handledFiles := make(map[string]bool)
-
+func (m *Manager) Backup(targets ...string) error {
 	bestFiles := m.inventory.GetBestFiles(m.path)
 
-	if !info.IsDir() {
-		return m.backupFile(target, handledFiles, bestFiles)
+	for _, target := range targets {
+		log.Printf("Backing up target %v", target)
+
+		info, err := os.Stat(target)
+		if err != nil {
+			return err
+		}
+
+		handledFiles := make(map[string]bool)
+
+		if !info.IsDir() {
+			return m.backupFile(target, handledFiles, bestFiles)
+		}
+
+		err = m.backupDir(target, handledFiles, bestFiles)
+		if err != nil {
+			return err
+		}
+
+		err = m.tombstonePath(target, handledFiles, bestFiles)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = m.backupDir(target, handledFiles, bestFiles)
-	if err != nil {
-		return err
-	}
-
-	return m.tombstonePath(target, handledFiles, bestFiles)
+	return nil
 }
 
 func (m *Manager) backupDir(target string, handledFiles map[string]bool, bestFiles map[string]*inventory.FileInfo) error {
@@ -120,6 +129,11 @@ func (m *Manager) backupFile(path string, handledFiles map[string]bool, bestFile
 
 	relPath, _ := util.StripLeadingSlashes(path)
 	existingInfo := bestFiles[relPath]
+
+	if handledFiles[relPath] {
+		// Same file twice in a backup job
+		return nil
+	}
 
 	handledFiles[relPath] = true
 
