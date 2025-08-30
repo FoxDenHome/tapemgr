@@ -5,7 +5,7 @@
 # so if you commit your current changes the PKGBUILD that would push it one tag further
 # than it just calculated, so it would cause a perma-diff in git which is very suboptimal
 latest_tag="$(git describe --tags --abbrev=0)"
-commits_since_tag="$(git rev-list --count ${latest_tag}..HEAD)"
+commits_since_tag="$(git rev-list --count "${latest_tag}..HEAD")"
 tag_suffix=""
 if [ -n "$(git status --porcelain)" ]; then
   tag_suffix="dev"
