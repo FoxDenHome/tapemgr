@@ -19,8 +19,12 @@ arch=('x86_64' 'arm64')
 url='https://github.com/FoxDenHome/tapemgr.git'
 license=('GPL-3.0-or-later')
 makedepends=('git' 'go')
-source=()
-sha256sums=()
+source=(
+  'config.json'
+)
+sha256sums=(
+  'SKIP'
+)
 
 goldflags='' # Hidden tweak for source-ing this file
 
