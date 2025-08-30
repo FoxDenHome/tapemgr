@@ -15,7 +15,9 @@ func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer fh.Close()
+	defer func() {
+		_ = fh.Close()
+	}()
 
 	tape := &Tape{
 		inventory: inv,
@@ -135,7 +137,9 @@ func (t *Tape) Save() error {
 	if err != nil {
 		return err
 	}
-	defer fh.Close()
+	defer func() {
+		_ = fh.Close()
+	}()
 
 	enc := json.NewEncoder(fh)
 	enc.SetEscapeHTML(false)

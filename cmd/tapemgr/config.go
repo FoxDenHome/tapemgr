@@ -20,7 +20,9 @@ func loadConfig(path string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	defer reader.Close()
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
