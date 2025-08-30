@@ -1,7 +1,9 @@
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-  workflow_call: {}
+  push:
+    branches:
+      - main
 
 name: Check
 
