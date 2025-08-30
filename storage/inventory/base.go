@@ -4,18 +4,15 @@ import (
 	"os"
 	"slices"
 	"strings"
-
-	"github.com/FoxDenHome/tapemgr/storage/encryption"
 )
 
 type Tape struct {
 	inventory *Inventory
 
-	Barcode              string                 `json:"barcode"`
-	Files                map[string]*FileInfo   `json:"files"`
-	Size                 int64                  `json:"size"`
-	Free                 int64                  `json:"free"`
-	MinPathCryptoVersion encryption.PathVersion `json:"min_path_crypto_version"`
+	Barcode string               `json:"barcode"`
+	Files   map[string]*FileInfo `json:"files"`
+	Size    int64                `json:"size"`
+	Free    int64                `json:"free"`
 }
 
 type Inventory struct {
@@ -62,10 +59,9 @@ func (i *Inventory) GetOrCreateTape(barcode string) *Tape {
 	}
 
 	tape = &Tape{
-		inventory:            i,
-		Barcode:              barcode,
-		Files:                make(map[string]*FileInfo),
-		MinPathCryptoVersion: encryption.PATH_VERSION_CURRENT,
+		inventory: i,
+		Barcode:   barcode,
+		Files:     make(map[string]*FileInfo),
 	}
 	i.tapes[barcode] = tape
 	return tape
