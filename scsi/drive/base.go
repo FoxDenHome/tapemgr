@@ -20,7 +20,7 @@ type TapeDrive struct {
 	GenericPath string
 
 	mountPoint string
-	mountWait  sync.WaitGroup
+	mountWait  *sync.WaitGroup
 	mountProc  *exec.Cmd
 }
 

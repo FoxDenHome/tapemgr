@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 )
 
@@ -26,6 +27,7 @@ func (d *TapeDrive) Mount() error {
 		return err
 	}
 
+	d.mountWait = &sync.WaitGroup{}
 	d.mountWait.Add(1)
 	go func() {
 		_ = d.mountProc.Wait()
@@ -44,11 +46,10 @@ func (d *TapeDrive) Mount() error {
 }
 
 func (d *TapeDrive) Unmount() (err error) {
-	if d.mountProc == nil {
+	proc := d.mountProc
+	if proc == nil {
 		return nil
 	}
-
-	proc := d.mountProc
 	d.mountProc = nil
 
 	if d.isMounted() {
@@ -63,7 +64,7 @@ func (d *TapeDrive) Unmount() (err error) {
 		return
 	}
 
-	_ = proc.Wait()
+	d.WaitForUnmount()
 	return nil
 }
 
@@ -72,7 +73,11 @@ func (d *TapeDrive) WaitForUnmount() {
 }
 
 func (d *TapeDrive) mountProcAlive() bool {
-	return d.mountProc.ProcessState == nil
+	proc := d.mountProc
+	if proc == nil {
+		return false
+	}
+	return proc.ProcessState == nil
 }
 
 func (d *TapeDrive) isMounted() bool {
