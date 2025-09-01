@@ -25,6 +25,42 @@ func copyModTimes(src, dest string) error {
 	return os.Chtimes(dest, stat.ModTime(), stat.ModTime())
 }
 
+func copyModTimesXattr(src, dest string) error {
+	modTimeBytes, err := xattr.Get(src, XATTR_MOD_TIME)
+	if err != nil {
+		if !errors.Is(err, xattr.ENOATTR) {
+			log.Printf("Failed to get "+XATTR_MOD_TIME+" xattr: %v", err)
+		}
+		return copyModTimes(src, dest)
+	}
+
+	modTime, err := time.Parse(time.RFC3339, string(modTimeBytes))
+	if err != nil {
+		log.Printf("Invalid "+XATTR_MOD_TIME+" xattr %s: %v", string(modTimeBytes), err)
+		return copyModTimes(src, dest)
+	}
+
+	return os.Chtimes(dest, modTime, modTime)
+}
+
+func copyModeXattr(src, dest string) error {
+	modeBytes, err := xattr.Get(src, XATTR_MODE)
+	if err != nil {
+		if !errors.Is(err, xattr.ENOATTR) {
+			log.Printf("Failed to get "+XATTR_MODE+" xattr: %v", err)
+		}
+		return nil
+	}
+
+	mode, err := strconv.ParseInt(string(modeBytes), 8, 32)
+	if err != nil {
+		log.Printf("Invalid "+XATTR_MODE+" xattr %s: %v", string(modeBytes), err)
+		return nil
+	}
+
+	return os.Chmod(dest, os.FileMode(mode))
+}
+
 func generateXattr(src, dest string) error {
 	stat, err := os.Stat(src)
 	if err != nil {
@@ -44,51 +80,14 @@ func generateXattr(src, dest string) error {
 }
 
 func retrieveXattr(src, dest string) error {
-	modTimeBytes, err := xattr.Get(src, XATTR_MOD_TIME)
-	if err != nil {
-		if !errors.Is(err, xattr.ENOATTR) {
-			log.Printf("Failed to get "+XATTR_MOD_TIME+" xattr: %v", err)
-		}
-
-		err = copyModTimes(src, dest)
-		if err != nil {
-			return err
-		}
-	}
-
-	modTime, err := time.Parse(time.RFC3339, string(modTimeBytes))
-	if err != nil {
-		log.Printf("Invalid "+XATTR_MOD_TIME+" xattr %s: %v", string(modTimeBytes), err)
-		err = copyModTimes(src, dest)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = os.Chtimes(dest, modTime, modTime)
+	err := copyModTimesXattr(src, dest)
 	if err != nil {
 		return err
 	}
 
-	modeBytes, err := xattr.Get(src, XATTR_MODE)
+	err = copyModeXattr(src, dest)
 	if err != nil {
-		if !errors.Is(err, xattr.ENOATTR) {
-			log.Printf("Failed to get "+XATTR_MODE+" xattr: %v", err)
-		}
-		// Can't set modes
-	} else {
-		mode, err := strconv.ParseInt(string(modeBytes), 8, 32)
-		if err != nil {
-			log.Printf("Invalid "+XATTR_MODE+" xattr %s: %v", string(modeBytes), err)
-			err = copyModTimes(src, dest)
-			if err != nil {
-				return err
-			}
-		}
-		err = os.Chmod(dest, os.FileMode(mode))
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	return nil
