@@ -2,12 +2,15 @@ package inventory
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/FoxDenHome/tapemgr/scsi/drive"
 	"github.com/FoxDenHome/tapemgr/util"
 	"golang.org/x/sys/unix"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Tape struct {
@@ -19,7 +22,43 @@ type Tape struct {
 	Free    int64            `json:"free"`
 }
 
-func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
+func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
+	log.Printf("Loading tape inventory from %s", filename)
+	data, err := os.ReadFile(filepath.Join(inv.path, filename))
+	if err != nil {
+		return nil, err
+	}
+
+	protoTape := ProtoTape{}
+	err = proto.Unmarshal(data, &protoTape)
+	if err != nil {
+		return nil, err
+	}
+
+	tape := &Tape{
+		inventory: inv,
+		Barcode:   protoTape.Barcode,
+		Size:      protoTape.Size,
+		Free:      protoTape.Free,
+		Files:     make(map[string]*File, len(protoTape.Files)),
+	}
+
+	for _, protoFile := range protoTape.Files {
+		file := &File{
+			tape: tape,
+			path: protoFile.Path,
+
+			Size:         protoFile.Size,
+			ModifiedTime: protoFile.ModifiedTime.AsTime().UTC(),
+		}
+		file.path = util.StripLeadingSlashes(file.path)
+		tape.Files[file.path] = file
+	}
+
+	return tape, nil
+}
+
+func loadFromFileJSON(inv *Inventory, filename string) (*Tape, error) {
 	fh, err := os.Open(filepath.Join(inv.path, filename))
 	if err != nil {
 		return nil, err
@@ -36,15 +75,18 @@ func LoadFromFile(inv *Inventory, filename string) (*Tape, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	for path, file := range tape.Files {
-		path, removed := util.StripLeadingSlashes(path)
-		if removed {
+		strippedPath := util.StripLeadingSlashes(path)
+		if path != strippedPath {
+			path = strippedPath
 			delete(tape.Files, path)
 			tape.Files[path] = file
 		}
 		file.tape = tape
 		file.path = path
 	}
+
 	return tape, nil
 }
 
@@ -101,7 +143,7 @@ func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 }
 
 func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
-	path, _ = util.StripLeadingSlashes(path)
+	path = util.StripLeadingSlashes(path)
 
 	stat, err := os.Stat(filepath.Join(drive.MountPoint(), path))
 	if err != nil {
@@ -142,7 +184,7 @@ func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
 }
 
 func (t *Tape) Save() error {
-	fh, err := os.Create(filepath.Join(t.inventory.path, t.Barcode+".json"))
+	fh, err := os.Create(filepath.Join(t.inventory.path, t.Barcode+".proto"))
 	if err != nil {
 		return err
 	}
@@ -150,8 +192,24 @@ func (t *Tape) Save() error {
 		_ = fh.Close()
 	}()
 
-	enc := json.NewEncoder(fh)
-	enc.SetEscapeHTML(false)
-	enc.SetIndent("", "    ")
-	return enc.Encode(t)
+	fileArray := make([]*ProtoFile, 0, len(t.Files))
+	for _, file := range t.Files {
+		fileArray = append(fileArray, &ProtoFile{
+			Path:         file.path,
+			Size:         file.Size,
+			ModifiedTime: timestamppb.New(file.ModifiedTime),
+		})
+	}
+
+	enc, err := proto.Marshal(&ProtoTape{
+		Barcode: t.Barcode,
+		Size:    t.Size,
+		Free:    t.Free,
+		Files:   fileArray,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = fh.Write(enc)
+	return err
 }

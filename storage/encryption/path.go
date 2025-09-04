@@ -44,7 +44,7 @@ func (c *PathCryptor) Encrypt(path string) string {
 func (c *PathCryptor) encrypt(path string) string {
 	encrypter := cipher.NewCBCEncrypter(c.cipher, c.iv)
 
-	path, _ = util.StripLeadingSlashes(path)
+	path = util.StripLeadingSlashes(path)
 
 	parts := strings.Split(path, "/")
 
@@ -71,7 +71,7 @@ func (c *PathCryptor) encryptPart(part string, encrypter cipher.BlockMode) strin
 }
 
 func (c *PathCryptor) Decrypt(path string) (string, error) {
-	path, _ = util.StripLeadingSlashes(path)
+	path = util.StripLeadingSlashes(path)
 
 	version := PATH_VERSION_0
 	if path[0] == '=' {
@@ -81,7 +81,7 @@ func (c *PathCryptor) Decrypt(path string) (string, error) {
 			version = PathVersion(versionInt)
 		}
 		path = path[pathSlash:]
-		path, _ = util.StripLeadingSlashes(path)
+		path = util.StripLeadingSlashes(path)
 	}
 
 	switch version {

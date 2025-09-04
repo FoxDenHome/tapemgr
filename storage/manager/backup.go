@@ -127,7 +127,7 @@ func (m *Manager) backupFile(path string, handledFiles map[string]bool, bestFile
 
 	encryptedRelPath := m.path.Encrypt(path)
 
-	relPath, _ := util.StripLeadingSlashes(path)
+	relPath := util.StripLeadingSlashes(path)
 	existingInfo := bestFiles[relPath]
 
 	if handledFiles[relPath] {

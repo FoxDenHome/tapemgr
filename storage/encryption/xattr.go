@@ -61,6 +61,8 @@ func copyModeXattr(src, dest string) error {
 	return os.Chmod(dest, os.FileMode(mode))
 }
 
+// TODO: Implement more generic xattr loaders and storers
+
 func generateXattr(src, dest string) error {
 	stat, err := os.Stat(src)
 	if err != nil {

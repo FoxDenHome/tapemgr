@@ -9,6 +9,9 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/encryption"
 )
 
+//go:generate go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+//go:generate protoc --go_out=. --go_opt=paths=source_relative inventory.proto
+
 type Inventory struct {
 	path  string
 	tapes map[string]*Tape
@@ -22,6 +25,40 @@ func New(path string) (*Inventory, error) {
 	return inv, inv.Reload()
 }
 
+func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, loader func(i *Inventory, filename string) (*Tape, error)) {
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		name := file.Name()
+		if !strings.HasSuffix(name, suffix) {
+			continue
+		}
+
+		barcode := strings.TrimSuffix(name, suffix)
+		if barcode == "" {
+			continue
+		}
+
+		if i.tapes[barcode] != nil {
+			log.Printf("Warning: duplicate tape barcode %s found in inventory file %s, ignoring (maybe deprecated files?)", barcode, name)
+			continue
+		}
+
+		log.Printf("Loading tape inventory file with suffix %s: %s", suffix, name)
+		tape, err := loader(i, name)
+		if err != nil {
+			log.Printf("Failed to load tape inventory from %s: %v", name, err)
+			continue
+		}
+		if tape.Barcode != barcode {
+			log.Printf("Warning: tape barcode in file %s (%s) does not match filename, ignoring", name, tape.Barcode)
+			continue
+		}
+		i.tapes[tape.Barcode] = tape
+	}
+}
+
 func (i *Inventory) Reload() error {
 	i.tapes = make(map[string]*Tape)
 	files, err := os.ReadDir(i.path)
@@ -29,20 +66,9 @@ func (i *Inventory) Reload() error {
 		return err
 	}
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		name := file.Name()
-		if !strings.HasSuffix(name, ".json") {
-			continue
-		}
-		tape, err := LoadFromFile(i, name)
-		if err != nil {
-			return err
-		}
-		i.tapes[tape.Barcode] = tape
-	}
+	i.loadTapeList(".proto", files, loadFromFileProto)
+	i.loadTapeList(".json", files, loadFromFileJSON)
+
 	return nil
 }
 
