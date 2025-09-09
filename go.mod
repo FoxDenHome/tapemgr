@@ -7,7 +7,7 @@ require (
 	github.com/FoxDenHome/goscsi v0.0.0-20250829181816-793f93f54e74
 	github.com/pkg/xattr v0.4.12
 	golang.org/x/sys v0.36.0
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/protobuf v1.36.9
 )
 
 require (
