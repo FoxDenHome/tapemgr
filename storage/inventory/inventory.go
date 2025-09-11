@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/marcboeker/go-duckdb/v2"
+
 	"github.com/FoxDenHome/tapemgr/storage/encryption"
 )
 
