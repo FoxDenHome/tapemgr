@@ -44,7 +44,7 @@ func New(path string) (*Inventory, error) {
 	return inv, inv.Reload()
 }
 
-func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, loader func(i *Inventory, filename string) (*Tape, error)) {
+func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, loader func(i *Inventory, filename string) error) {
 	for _, file := range files {
 		if file.IsDir() {
 			continue
@@ -60,20 +60,9 @@ func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, loader func
 		}
 
 		log.Printf("Loading tape inventory file with suffix %s: %s", suffix, name)
-		tape, err := loader(i, name)
+		err := loader(i, name)
 		if err != nil {
-			log.Printf("Failed to load tape inventory from %s: %v", name, err)
-			continue
-		}
-		if tape.Barcode != barcode {
-			log.Printf("Warning: tape barcode in file %s (%s) does not match filename, ignoring", name, tape.Barcode)
-			continue
-		}
-
-		_, err = i.db.Exec("INSERT IGNORE INTO tapes (barcode, size, free) VALUES (?, ?, ?)", tape.Barcode, tape.Size, tape.Free)
-		if err != nil {
-			log.Printf("Failed to insert tape %s into database: %v", tape.Barcode, err)
-			continue
+			log.Fatalf("Failed to load tape inventory from %s: %v", name, err)
 		}
 	}
 }

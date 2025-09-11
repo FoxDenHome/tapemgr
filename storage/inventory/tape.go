@@ -19,46 +19,37 @@ type Tape struct {
 	Free    int64  `json:"free"`
 }
 
-func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
+func loadFromFileProto(inv *Inventory, filename string) error {
 	log.Printf("Loading tape inventory from %s", filename)
 	data, err := os.ReadFile(filepath.Join(inv.path, filename))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	protoTape := ProtoTape{}
 	err = proto.Unmarshal(data, &protoTape)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	tape := &Tape{
-		inventory: inv,
-		Barcode:   protoTape.Barcode,
-		Size:      protoTape.Size,
-		Free:      protoTape.Free,
-	}
-
-	_, err = inv.db.Exec("INSERT IGNORE INTO tapes (barcode, size, free) VALUES (?, ?, ?)", tape.Barcode, tape.Size, tape.Free)
+	_, err = inv.db.Exec("INSERT OR IGNORE INTO tapes (barcode, size, free) VALUES (?, ?, ?)", protoTape.Barcode, protoTape.Size, protoTape.Free)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, protoFile := range protoTape.Files {
-		file := &File{
-			barcode:      tape.Barcode,
-			path:         protoFile.Path,
-			Size:         protoFile.Size,
-			ModifiedTime: protoFile.ModifiedTime.AsTime().UTC(),
-		}
-		file.path = util.StripLeadingSlashes(file.path)
-		_, err = inv.db.Exec("INSERT IGNORE INTO files (path, barcode, size, modified_time) VALUES (?, ?, ?, ?)", file.path, tape.Barcode, file.Size, file.ModifiedTime)
+		_, err = inv.db.Exec("INSERT OR IGNORE INTO files (path, barcode, size, modified_time) VALUES (?, ?, ?, ?)",
+			util.StripLeadingSlashes(protoFile.Path),
+			protoTape.Barcode,
+			protoFile.Size,
+			protoFile.ModifiedTime.AsTime().UTC(),
+		)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return tape, nil
+	return nil
 }
 
 func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
