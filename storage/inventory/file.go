@@ -13,8 +13,9 @@ type File struct {
 	ModifiedTime time.Time `json:"modified_time"`
 	Size         int64     `json:"size"`
 
-	tape *Tape
-	path string
+	barcode string
+	path    string
+	inv     *Inventory
 }
 
 type ExtendedFile struct {
@@ -33,7 +34,7 @@ func (f *File) IsBetterThan(other *File) bool {
 }
 
 func (f *File) GetTape() *Tape {
-	return f.tape
+	return f.inv.GetOrCreateTape(f.barcode)
 }
 
 func (f *File) GetPath() string {

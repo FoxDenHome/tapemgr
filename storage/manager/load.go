@@ -38,9 +38,8 @@ func (m *Manager) loadForSize(size int64) error {
 		return fmt.Errorf("failed to get volume tags: %v", err)
 	}
 
-	tapeMap := m.inventory.GetTapes()
 	for _, barcode := range volumeTags {
-		if tapeMap[barcode] == nil {
+		if !m.inventory.HasTape(barcode) {
 			// Found unused new tape!
 			return m.formatTapeKeepMounted(barcode)
 		}

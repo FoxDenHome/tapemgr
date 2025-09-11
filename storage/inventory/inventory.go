@@ -1,26 +1,43 @@
 package inventory
 
 import (
+	"database/sql"
+	"errors"
 	"log"
 	"os"
-	"slices"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/FoxDenHome/tapemgr/storage/encryption"
 )
 
-//go:generate go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-//go:generate protoc --go_out=. --go_opt=paths=source_relative inventory.proto
-
 type Inventory struct {
-	path  string
-	tapes map[string]*Tape
+	path string
+	db   *sql.DB
 }
 
 func New(path string) (*Inventory, error) {
+	db, err := sql.Open("duckdb", filepath.Join(path, "inventory.duckdb"))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS files (path VARCHAR, barcode VARCHAR, size BIGINT, modified_time TIMESTAMP WITH TIME ZONE, PRIMARY KEY(path, barcode))")
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS tapes (barcode VARCHAR PRIMARY KEY, size BIGINT, free BIGINT)")
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	inv := &Inventory{
-		path:  path,
-		tapes: make(map[string]*Tape),
+		path: path,
+		db:   db,
 	}
 	return inv, inv.Reload()
 }
@@ -40,11 +57,6 @@ func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, loader func
 			continue
 		}
 
-		if i.tapes[barcode] != nil {
-			log.Printf("Warning: duplicate tape barcode %s found in inventory file %s, ignoring (maybe deprecated files?)", barcode, name)
-			continue
-		}
-
 		log.Printf("Loading tape inventory file with suffix %s: %s", suffix, name)
 		tape, err := loader(i, name)
 		if err != nil {
@@ -55,66 +67,123 @@ func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, loader func
 			log.Printf("Warning: tape barcode in file %s (%s) does not match filename, ignoring", name, tape.Barcode)
 			continue
 		}
-		i.tapes[tape.Barcode] = tape
+
+		_, err = i.db.Exec("INSERT IGNORE INTO tapes (barcode, size, free) VALUES (?, ?, ?)", tape.Barcode, tape.Size, tape.Free)
+		if err != nil {
+			log.Printf("Failed to insert tape %s into database: %v", tape.Barcode, err)
+			continue
+		}
 	}
 }
 
 func (i *Inventory) Reload() error {
-	i.tapes = make(map[string]*Tape)
 	files, err := os.ReadDir(i.path)
 	if err != nil {
 		return err
 	}
 
 	i.loadTapeList(".proto", files, loadFromFileProto)
-	i.loadTapeList(".json", files, loadFromFileJSON)
 
 	return nil
 }
 
 func (i *Inventory) GetOrCreateTape(barcode string) *Tape {
-	tape := i.tapes[barcode]
-	if tape != nil {
-		return tape
-	}
-
-	tape = &Tape{
+	tape := &Tape{
 		inventory: i,
-		Barcode:   barcode,
-		Files:     make(map[string]*File),
 	}
-	i.tapes[barcode] = tape
+	row := i.db.QueryRow("SELECT barcode, size, free FROM tapes WHERE barcode = ?", barcode)
+	err := row.Scan(&tape.Barcode, &tape.Size, &tape.Free)
+	if errors.Is(err, sql.ErrNoRows) {
+		tape.Barcode = barcode
+		tape.Size = 0
+		tape.Free = 0
+	} else if err != nil {
+		log.Fatalf("failed to scan tape row: %v", err)
+	}
 	return tape
 }
 
-func (i *Inventory) GetTapes() map[string]*Tape {
-	return i.tapes
+func (i *Inventory) getTapesByQuery(query string, args ...any) []*Tape {
+	tapes := make([]*Tape, 0)
+
+	dbTapes, err := i.db.Query(query, args...)
+	if err != nil {
+		log.Fatalf("failed to query tapes from database: %v", err)
+	}
+
+	var barcode string
+	var size, free int64
+	for dbTapes.Next() {
+		if err := dbTapes.Scan(&barcode, &size, &free); err != nil {
+			log.Fatalf("failed to scan tape row: %v", err)
+		}
+		tapes = append(tapes, &Tape{
+			inventory: i,
+			Barcode:   barcode,
+			Size:      size,
+			Free:      free,
+		})
+	}
+
+	return tapes
+}
+
+func (i *Inventory) HasTape(barcode string) bool {
+	row := i.db.QueryRow("SELECT COUNT(barcode) FROM tapes WHERE barcode = ?", barcode)
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		log.Fatalf("failed to scan tape count: %v", err)
+	}
+	return count > 0
+}
+
+func (i *Inventory) TapeCount() int {
+	row := i.db.QueryRow("SELECT COUNT(barcode) FROM tapes")
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		log.Fatalf("failed to scan tape count: %v", err)
+	}
+	return count
 }
 
 func (i *Inventory) GetTapesSortByFreeDesc() []*Tape {
-	tapes := make([]*Tape, 0, len(i.tapes))
-	for _, tape := range i.tapes {
-		tapes = append(tapes, tape)
-	}
-	slices.SortFunc(tapes, func(a, b *Tape) int {
-		return int(b.Free) - int(a.Free)
-	})
-	return tapes
+	return i.getTapesByQuery("SELECT barcode, size, free FROM tapes ORDER BY free DESC")
 }
 
 func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string]*File {
 	files := make(map[string]*File)
-	for _, tape := range i.tapes {
-		for name, info := range tape.Files {
-			clearName, err := pathCryptor.Decrypt(name)
-			if err != nil {
-				log.Printf("failed to decrypt path %q: %v", name, err)
-				continue
-			}
-			oldInfo, ok := files[clearName]
-			if !ok || info.IsBetterThan(oldInfo) {
-				files[clearName] = info
-			}
+
+	dbFiles, err := i.db.Query("SELECT path, barcode, size, modified_time FROM files")
+	if err != nil {
+		log.Fatalf("failed to query files from database: %v", err)
+	}
+
+	var path, barcode string
+	var size int64
+	var modifiedTime time.Time
+	for dbFiles.Next() {
+		if err := dbFiles.Scan(&path, &barcode, &size, &modifiedTime); err != nil {
+			log.Fatalf("failed to scan file row: %v", err)
+		}
+		clearName, err := pathCryptor.Decrypt(path)
+		if err != nil {
+			log.Printf("failed to decrypt path %q: %v", path, err)
+			continue
+		}
+
+		info := &File{
+			barcode:      barcode,
+			inv:          i,
+			path:         path,
+			Size:         size,
+			ModifiedTime: modifiedTime,
+		}
+
+		oldInfo, ok := files[clearName]
+		if !ok || info.IsBetterThan(oldInfo) {
+			files[clearName] = info
 		}
 	}
 
@@ -125,17 +194,4 @@ func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string
 	}
 
 	return files
-}
-
-func (i *Inventory) Save() error {
-	for _, tape := range i.tapes {
-		if tape.Size == 0 {
-			continue
-		}
-
-		if err := tape.Save(); err != nil {
-			return err
-		}
-	}
-	return nil
 }

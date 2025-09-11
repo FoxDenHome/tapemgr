@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,16 +9,14 @@ import (
 	"github.com/FoxDenHome/tapemgr/util"
 	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Tape struct {
 	inventory *Inventory
 
-	Barcode string           `json:"barcode"`
-	Files   map[string]*File `json:"files"`
-	Size    int64            `json:"size"`
-	Free    int64            `json:"free"`
+	Barcode string `json:"barcode"`
+	Size    int64  `json:"size"`
+	Free    int64  `json:"free"`
 }
 
 func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
@@ -40,51 +37,25 @@ func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
 		Barcode:   protoTape.Barcode,
 		Size:      protoTape.Size,
 		Free:      protoTape.Free,
-		Files:     make(map[string]*File, len(protoTape.Files)),
+	}
+
+	_, err = inv.db.Exec("INSERT IGNORE INTO tapes (barcode, size, free) VALUES (?, ?, ?)", tape.Barcode, tape.Size, tape.Free)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, protoFile := range protoTape.Files {
 		file := &File{
-			tape: tape,
-			path: protoFile.Path,
-
+			barcode:      tape.Barcode,
+			path:         protoFile.Path,
 			Size:         protoFile.Size,
 			ModifiedTime: protoFile.ModifiedTime.AsTime().UTC(),
 		}
 		file.path = util.StripLeadingSlashes(file.path)
-		tape.Files[file.path] = file
-	}
-
-	return tape, nil
-}
-
-func loadFromFileJSON(inv *Inventory, filename string) (*Tape, error) {
-	fh, err := os.Open(filepath.Join(inv.path, filename))
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = fh.Close()
-	}()
-
-	tape := &Tape{
-		inventory: inv,
-	}
-	dec := json.NewDecoder(fh)
-	err = dec.Decode(tape)
-	if err != nil {
-		return nil, err
-	}
-
-	for path, file := range tape.Files {
-		strippedPath := util.StripLeadingSlashes(path)
-		if path != strippedPath {
-			path = strippedPath
-			delete(tape.Files, path)
-			tape.Files[path] = file
+		_, err = inv.db.Exec("INSERT IGNORE INTO files (path, barcode, size, modified_time) VALUES (?, ?, ?, ?)", file.path, tape.Barcode, file.Size, file.ModifiedTime)
+		if err != nil {
+			return nil, err
 		}
-		file.tape = tape
-		file.path = path
 	}
 
 	return tape, nil
@@ -112,7 +83,6 @@ func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
 }
 
 func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
-	t.Files = make(map[string]*File)
 	err := t.reloadStats(drive)
 	if err != nil {
 		return err
@@ -123,7 +93,7 @@ func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
 		return err
 	}
 
-	return t.Save()
+	return nil
 }
 
 func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
@@ -139,7 +109,7 @@ func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 		}
 	}
 
-	return t.Save()
+	return nil
 }
 
 func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
@@ -150,15 +120,8 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	t.Files[path] = &File{
-		tape: t,
-		path: path,
-
-		Size:         stat.Size(),
-		ModifiedTime: stat.ModTime().UTC(),
-	}
-
-	return nil
+	_, err = t.inventory.db.Exec("INSERT OR REPLACE INTO files (path, barcode, size, modified_time) VALUES (?, ?, ?, ?)", path, t.Barcode, stat.Size(), stat.ModTime().UTC())
+	return err
 }
 
 func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
@@ -167,7 +130,7 @@ func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
 		return err
 	}
 
-	return t.Save()
+	return nil
 }
 
 func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
@@ -180,36 +143,6 @@ func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
 	t.Size = int64(stat.Blocks) * int64(stat.Bsize)
 	t.Free = int64(stat.Bfree) * int64(stat.Bsize)
 
-	return nil
-}
-
-func (t *Tape) Save() error {
-	fh, err := os.Create(filepath.Join(t.inventory.path, t.Barcode+".proto"))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = fh.Close()
-	}()
-
-	fileArray := make([]*ProtoFile, 0, len(t.Files))
-	for _, file := range t.Files {
-		fileArray = append(fileArray, &ProtoFile{
-			Path:         file.path,
-			Size:         file.Size,
-			ModifiedTime: timestamppb.New(file.ModifiedTime),
-		})
-	}
-
-	enc, err := proto.Marshal(&ProtoTape{
-		Barcode: t.Barcode,
-		Size:    t.Size,
-		Free:    t.Free,
-		Files:   fileArray,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = fh.Write(enc)
+	_, err = t.inventory.db.Exec("INSERT OR REPLACE INTO tapes (barcode, size, free) VALUES (?, ?, ?)", t.Barcode, t.Size, t.Free)
 	return err
 }

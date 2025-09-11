@@ -70,7 +70,7 @@ func main() {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
 
-	log.Printf("Loaded %d tapes from inventory", len(inv.GetTapes()))
+	log.Printf("Loaded %d tapes from inventory", inv.TapeCount())
 
 	fileManager, err = manager.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice)
 	if err != nil {
@@ -102,12 +102,6 @@ func main() {
 				util.FormatSize(tape.Size),
 				(100*(tape.Size-tape.Free))/tape.Size,
 			)
-		}
-
-	case "upgrade-inventory":
-		err = inv.Save()
-		if err != nil {
-			log.Fatalf("Failed to re-save inventory: %v", err)
 		}
 
 	case "backup":
