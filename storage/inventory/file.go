@@ -9,45 +9,43 @@ import (
 	"github.com/pkg/xattr"
 )
 
-type File struct {
-	tape         *Tape
-	path         string
-	modifiedTime time.Time
-	size         int64
+func (f *ProtoFile) IsBetterThan(other *ProtoFile) bool {
+	return f.ModifiedTime.AsTime().After(other.ModifiedTime.AsTime())
 }
 
-type ExtendedFile struct {
-	*File
+type File interface {
+	GetTape() Tape
+	GetPath() string
+	GetSize() int64
+	GetModifiedTime() time.Time
+	GetLTFSInfo(drive *drive.TapeDrive) (*FileLTFSInfo, error)
+}
 
+type file struct {
+	*ProtoFile
+
+	path string
+	tape Tape
+}
+
+func (f *file) GetTape() Tape {
+	return f.tape
+}
+
+func (f *file) GetPath() string {
+	return f.path
+}
+
+func (f *file) GetModifiedTime() time.Time {
+	return f.ModifiedTime.AsTime()
+}
+
+type FileLTFSInfo struct {
 	StartBlock int
 	Partition  string
 }
 
-func (i *File) isTombstone() bool {
-	return i.size <= 0
-}
-
-func (f *File) IsBetterThan(other *File) bool {
-	return f.modifiedTime.After(other.modifiedTime)
-}
-
-func (f *File) GetTape() *Tape {
-	return f.tape
-}
-
-func (f *File) GetPath() string {
-	return f.path
-}
-
-func (f *File) GetSize() int64 {
-	return f.size
-}
-
-func (f *File) GetModifiedTime() time.Time {
-	return f.modifiedTime
-}
-
-func (f *File) GetExtended(drive *drive.TapeDrive) (*ExtendedFile, error) {
+func (f *file) GetLTFSInfo(drive *drive.TapeDrive) (*FileLTFSInfo, error) {
 	partitionXattr, err := xattr.Get(filepath.Join(drive.MountPoint(), f.path), "user.ltfs.partition")
 	if err != nil {
 		return nil, err
@@ -61,8 +59,7 @@ func (f *File) GetExtended(drive *drive.TapeDrive) (*ExtendedFile, error) {
 		return nil, err
 	}
 
-	return &ExtendedFile{
-		File:       f,
+	return &FileLTFSInfo{
 		StartBlock: int(startBlockNum),
 		Partition:  string(partitionXattr),
 	}, nil

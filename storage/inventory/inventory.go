@@ -14,18 +14,18 @@ import (
 
 type Inventory struct {
 	path  string
-	tapes map[string]*Tape
+	tapes map[string]*tape
 }
 
 func New(path string) (*Inventory, error) {
 	inv := &Inventory{
 		path:  path,
-		tapes: make(map[string]*Tape),
+		tapes: make(map[string]*tape),
 	}
 	return inv, inv.Reload()
 }
 
-func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, resave bool, loader func(i *Inventory, filename string) (*Tape, error)) {
+func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, resave bool, loader func(i *Inventory, filename string) (*tape, error)) {
 	for _, file := range files {
 		if file.IsDir() {
 			continue
@@ -51,23 +51,23 @@ func (i *Inventory) loadTapeList(suffix string, files []os.DirEntry, resave bool
 			log.Printf("Failed to load tape inventory from %s: %v", name, err)
 			continue
 		}
-		if tape.barcode != barcode {
-			log.Printf("Warning: tape barcode in file %s (%s) does not match filename, ignoring", name, tape.barcode)
+		if tape.Barcode != barcode {
+			log.Printf("Warning: tape barcode in file %s (%s) does not match filename, ignoring", name, tape.Barcode)
 			continue
 		}
-		i.tapes[tape.barcode] = tape
+		i.tapes[tape.Barcode] = tape
 
 		if resave {
 			err = tape.save()
 			if err != nil {
-				log.Printf("Failed to re-save tape inventory for %s: %v", tape.barcode, err)
+				log.Printf("Failed to re-save tape inventory for %s: %v", tape.Barcode, err)
 			}
 		}
 	}
 }
 
 func (i *Inventory) Reload() error {
-	i.tapes = make(map[string]*Tape)
+	i.tapes = make(map[string]*tape)
 	files, err := os.ReadDir(i.path)
 	if err != nil {
 		return err
@@ -78,56 +78,64 @@ func (i *Inventory) Reload() error {
 	return nil
 }
 
-func (i *Inventory) GetOrCreateTape(barcode string) *Tape {
-	tape := i.tapes[barcode]
-	if tape != nil {
-		return tape
+func (i *Inventory) GetOrCreateTape(barcode string) Tape {
+	tp := i.tapes[barcode]
+	if tp != nil {
+		return tp
 	}
 
-	tape = &Tape{
+	tp = &tape{
 		inventory: i,
-		barcode:   barcode,
-		files:     make(map[string]*File),
-		size:      0,
-		free:      0,
+		ProtoTape: ProtoTape{
+			Barcode: barcode,
+			Files:   make(map[string]*ProtoFile),
+		},
 	}
-	i.tapes[barcode] = tape
-	return tape
+	i.tapes[barcode] = tp
+	return tp
 }
 
-func (i *Inventory) GetTapes() map[string]*Tape {
-	return i.tapes
+func (i *Inventory) HasTape(barcode string) bool {
+	return i.tapes[barcode] != nil
 }
 
-func (i *Inventory) GetTapesSortByFreeDesc() []*Tape {
-	tapes := make([]*Tape, 0, len(i.tapes))
+func (i *Inventory) TapeCount() int {
+	return len(i.tapes)
+}
+
+func (i *Inventory) GetTapesSortByFreeDesc() []Tape {
+	tapes := make([]Tape, 0, len(i.tapes))
 	for _, tape := range i.tapes {
 		tapes = append(tapes, tape)
 	}
-	slices.SortFunc(tapes, func(a, b *Tape) int {
-		return int(b.free) - int(a.free)
+	slices.SortFunc(tapes, func(a, b Tape) int {
+		return int(b.GetFree()) - int(a.GetFree())
 	})
 	return tapes
 }
 
-func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string]*File {
-	files := make(map[string]*File)
+func (i *Inventory) GetBestFiles(pathCryptor *encryption.PathCryptor) map[string]File {
+	files := make(map[string]File)
 	for _, tape := range i.tapes {
-		for name, info := range tape.files {
-			clearName, err := pathCryptor.Decrypt(name)
+		for path, protoFile := range tape.Files {
+			clearName, err := pathCryptor.Decrypt(path)
 			if err != nil {
-				log.Printf("failed to decrypt path %q: %v", name, err)
+				log.Printf("failed to decrypt path %q: %v", path, err)
 				continue
 			}
 			oldInfo, ok := files[clearName]
-			if !ok || info.IsBetterThan(oldInfo) {
-				files[clearName] = info
+			if !ok || protoFile.IsBetterThan(oldInfo.(*file).ProtoFile) {
+				files[clearName] = &file{
+					ProtoFile: protoFile,
+					tape:      tape,
+					path:      path,
+				}
 			}
 		}
 	}
 
 	for name, file := range files {
-		if file.isTombstone() {
+		if file.GetSize() <= 0 {
 			delete(files, name)
 		}
 	}

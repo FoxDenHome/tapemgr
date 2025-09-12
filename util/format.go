@@ -33,3 +33,10 @@ func FormatSize(size int64) string {
 		return formatFloat(sz) + " B"
 	}
 }
+
+func PluralizeS(base string, count int) string {
+	if count == 1 {
+		return base
+	}
+	return base + "s"
+}

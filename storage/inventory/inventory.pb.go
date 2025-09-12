@@ -23,8 +23,8 @@ const (
 )
 
 type ProtoFile struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// 1
 	Size          int64                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
 	ModifiedTime  *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=modified_time,json=modifiedTime,proto3" json:"modified_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -61,13 +61,6 @@ func (*ProtoFile) Descriptor() ([]byte, []int) {
 	return file_inventory_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ProtoFile) GetPath() string {
-	if x != nil {
-		return x.Path
-	}
-	return ""
-}
-
 func (x *ProtoFile) GetSize() int64 {
 	if x != nil {
 		return x.Size
@@ -83,11 +76,12 @@ func (x *ProtoFile) GetModifiedTime() *timestamppb.Timestamp {
 }
 
 type ProtoTape struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Barcode       string                 `protobuf:"bytes,1,opt,name=barcode,proto3" json:"barcode,omitempty"`
-	Size          int64                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
-	Free          int64                  `protobuf:"varint,3,opt,name=free,proto3" json:"free,omitempty"`
-	Files         []*ProtoFile           `protobuf:"bytes,4,rep,name=files,proto3" json:"files,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Barcode string                 `protobuf:"bytes,1,opt,name=barcode,proto3" json:"barcode,omitempty"`
+	Size    int64                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	Free    int64                  `protobuf:"varint,3,opt,name=free,proto3" json:"free,omitempty"`
+	// 4
+	Files         map[string]*ProtoFile `protobuf:"bytes,5,rep,name=files,proto3" json:"files,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -143,7 +137,7 @@ func (x *ProtoTape) GetFree() int64 {
 	return 0
 }
 
-func (x *ProtoTape) GetFiles() []*ProtoFile {
+func (x *ProtoTape) GetFiles() map[string]*ProtoFile {
 	if x != nil {
 		return x.Files
 	}
@@ -154,16 +148,19 @@ var File_inventory_proto protoreflect.FileDescriptor
 
 const file_inventory_proto_rawDesc = "" +
 	"\n" +
-	"\x0finventory.proto\x12 network.foxden.tapemgr.inventory\x1a\x1fgoogle/protobuf/timestamp.proto\"t\n" +
+	"\x0finventory.proto\x12 network.foxden.tapemgr.inventory\x1a\x1fgoogle/protobuf/timestamp.proto\"`\n" +
 	"\tProtoFile\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\x12\x12\n" +
 	"\x04size\x18\x02 \x01(\x03R\x04size\x12?\n" +
-	"\rmodified_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\fmodifiedTime\"\x90\x01\n" +
+	"\rmodified_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\fmodifiedTime\"\x82\x02\n" +
 	"\tProtoTape\x12\x18\n" +
 	"\abarcode\x18\x01 \x01(\tR\abarcode\x12\x12\n" +
 	"\x04size\x18\x02 \x01(\x03R\x04size\x12\x12\n" +
-	"\x04free\x18\x03 \x01(\x03R\x04free\x12A\n" +
-	"\x05files\x18\x04 \x03(\v2+.network.foxden.tapemgr.inventory.ProtoFileR\x05filesB1Z/github.com/FoxDenHome/tapemgr/storage/inventoryb\x06proto3"
+	"\x04free\x18\x03 \x01(\x03R\x04free\x12L\n" +
+	"\x05files\x18\x05 \x03(\v26.network.foxden.tapemgr.inventory.ProtoTape.FilesEntryR\x05files\x1ae\n" +
+	"\n" +
+	"FilesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12A\n" +
+	"\x05value\x18\x02 \x01(\v2+.network.foxden.tapemgr.inventory.ProtoFileR\x05value:\x028\x01B1Z/github.com/FoxDenHome/tapemgr/storage/inventoryb\x06proto3"
 
 var (
 	file_inventory_proto_rawDescOnce sync.Once
@@ -177,20 +174,22 @@ func file_inventory_proto_rawDescGZIP() []byte {
 	return file_inventory_proto_rawDescData
 }
 
-var file_inventory_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_inventory_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_inventory_proto_goTypes = []any{
 	(*ProtoFile)(nil),             // 0: network.foxden.tapemgr.inventory.ProtoFile
 	(*ProtoTape)(nil),             // 1: network.foxden.tapemgr.inventory.ProtoTape
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	nil,                           // 2: network.foxden.tapemgr.inventory.ProtoTape.FilesEntry
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_inventory_proto_depIdxs = []int32{
-	2, // 0: network.foxden.tapemgr.inventory.ProtoFile.modified_time:type_name -> google.protobuf.Timestamp
-	0, // 1: network.foxden.tapemgr.inventory.ProtoTape.files:type_name -> network.foxden.tapemgr.inventory.ProtoFile
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 0: network.foxden.tapemgr.inventory.ProtoFile.modified_time:type_name -> google.protobuf.Timestamp
+	2, // 1: network.foxden.tapemgr.inventory.ProtoTape.files:type_name -> network.foxden.tapemgr.inventory.ProtoTape.FilesEntry
+	0, // 2: network.foxden.tapemgr.inventory.ProtoTape.FilesEntry.value:type_name -> network.foxden.tapemgr.inventory.ProtoFile
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_inventory_proto_init() }
@@ -204,7 +203,7 @@ func file_inventory_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_inventory_proto_rawDesc), len(file_inventory_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

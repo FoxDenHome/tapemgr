@@ -70,7 +70,7 @@ func main() {
 		log.Fatalf("Failed to create inventory: %v", err)
 	}
 
-	log.Printf("Loaded %d tapes from inventory", len(inv.GetTapes()))
+	log.Printf("Loaded %d tapes from inventory", inv.TapeCount())
 
 	fileManager, err = manager.New(fileCryptor, nameCryptor, inv, loaderDevice, driveDevice)
 	if err != nil {
@@ -97,12 +97,17 @@ func main() {
 		for _, tape := range inv.GetTapesSortByFreeDesc() {
 			free := tape.GetFree()
 			size := tape.GetSize()
+
+			fileCount := len(tape.GetFiles())
+
 			log.Printf(
-				"Tape: %s, Free: %s / %s (%d%% full)",
+				"Tape: %s, Size: %s (%s free, %d%% used by %d %s)",
 				tape.GetBarcode(),
-				util.FormatSize(free),
 				util.FormatSize(size),
+				util.FormatSize(free),
 				(100*(size-free))/size,
+				fileCount,
+				util.PluralizeS("file", fileCount),
 			)
 		}
 
@@ -151,7 +156,7 @@ func main() {
 			tapesMap[tape] = true
 		}
 
-		err := fileManager.Restore(func(path string, info *inventory.File) bool {
+		err := fileManager.Restore(func(path string, info inventory.File) bool {
 			return tapesMap[info.GetTape().GetBarcode()]
 		}, target)
 		if err != nil {
@@ -168,7 +173,7 @@ func main() {
 			files[i] = strings.Trim(file, "/")
 		}
 
-		err := fileManager.Restore(func(path string, info *inventory.File) bool {
+		err := fileManager.Restore(func(path string, info inventory.File) bool {
 			for _, file := range files {
 				if file == path {
 					return true

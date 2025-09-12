@@ -20,7 +20,7 @@ type Manager struct {
 	drive              *drive.TapeDrive
 	loaderDriveAddress uint16
 
-	currentTape *inventory.Tape
+	currentTape inventory.Tape
 }
 
 func New(

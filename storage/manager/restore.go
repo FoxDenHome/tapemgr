@@ -12,10 +12,11 @@ import (
 	"github.com/FoxDenHome/tapemgr/storage/inventory"
 )
 
-type FilterFunc func(path string, info *inventory.File) bool
+type FilterFunc func(path string, info inventory.File) bool
 
 type restoreFile struct {
-	*inventory.ExtendedFile
+	file          inventory.File
+	info          *inventory.FileLTFSInfo
 	decryptedPath string
 }
 
@@ -24,7 +25,7 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 		return fmt.Errorf("target path %s is not absolute", target)
 	}
 
-	allFileMap := make(map[string]map[string]*inventory.File)
+	allFileMap := make(map[string]map[string]inventory.File)
 
 	allFiles := m.inventory.GetBestFiles(m.path)
 	for decryptedPath, file := range allFiles {
@@ -34,7 +35,7 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 		tape := file.GetTape()
 		barcode := tape.GetBarcode()
 		if _, ok := allFileMap[barcode]; !ok {
-			allFileMap[barcode] = make(map[string]*inventory.File)
+			allFileMap[barcode] = make(map[string]inventory.File)
 		}
 		allFileMap[barcode][decryptedPath] = file
 	}
@@ -49,7 +50,7 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 
 		fileInfos := make([]*restoreFile, 0, len(filesMap))
 		for decryptedPath, file := range filesMap {
-			var fileInfo *inventory.ExtendedFile
+			var fileInfo *inventory.FileLTFSInfo
 			if DryRun {
 				sb, _ := rand.Int(rand.Reader, big.NewInt(1<<32-1))
 				sb64 := sb.Int64()
@@ -57,33 +58,33 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 				if sb64%2 == 1 {
 					part = "b"
 				}
-				fileInfo = &inventory.ExtendedFile{
-					File:       file,
+				fileInfo = &inventory.FileLTFSInfo{
 					Partition:  part,
 					StartBlock: int(sb64),
 				}
 			} else {
-				fileInfo, err = file.GetExtended(m.drive)
+				fileInfo, err = file.GetLTFSInfo(m.drive)
 				if err != nil {
 					return err
 				}
 			}
 			fileInfos = append(fileInfos, &restoreFile{
-				ExtendedFile:  fileInfo,
+				info:          fileInfo,
+				file:          file,
 				decryptedPath: decryptedPath,
 			})
 		}
 
 		slices.SortFunc(fileInfos, func(a, b *restoreFile) int {
-			partitionCmp := strings.Compare(a.Partition, b.Partition)
+			partitionCmp := strings.Compare(a.info.Partition, b.info.Partition)
 			if partitionCmp != 0 {
 				return partitionCmp
 			}
-			return a.StartBlock - b.StartBlock
+			return a.info.StartBlock - b.info.StartBlock
 		})
 
 		for _, fileInfo := range fileInfos {
-			filePath := filepath.Join(m.drive.MountPoint(), fileInfo.GetPath())
+			filePath := filepath.Join(m.drive.MountPoint(), fileInfo.file.GetPath())
 			log.Printf("[COPY] %s", filePath)
 			if DryRun {
 				continue

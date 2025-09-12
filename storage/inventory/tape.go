@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 
@@ -12,63 +11,42 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type Tape struct {
+type Tape interface {
+	GetBarcode() string
+	GetSize() int64
+	GetFree() int64
+	GetFiles() map[string]*ProtoFile
+	LoadFrom(drive *drive.TapeDrive) error
+	AddFiles(drive *drive.TapeDrive, path ...string) error
+	ReloadStats(drive *drive.TapeDrive) error
+	Equals(other Tape) bool
+}
+
+type tape struct {
+	ProtoTape
+
 	inventory *Inventory
-
-	barcode string
-	files   map[string]*File
-	size    int64
-	free    int64
 }
 
-func (t *Tape) GetBarcode() string {
-	return t.barcode
-}
-
-func (t *Tape) GetSize() int64 {
-	return t.size
-}
-
-func (t *Tape) GetFree() int64 {
-	return t.free
-}
-
-func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
-	log.Printf("Loading tape inventory from %s", filename)
+func loadFromFileProto(inv *Inventory, filename string) (*tape, error) {
 	data, err := os.ReadFile(filepath.Join(inv.path, filename))
 	if err != nil {
 		return nil, err
 	}
 
-	protoTape := ProtoTape{}
-	err = proto.Unmarshal(data, &protoTape)
+	tp := &tape{
+		inventory: inv,
+	}
+
+	err = proto.Unmarshal(data, &tp.ProtoTape)
 	if err != nil {
 		return nil, err
 	}
 
-	tape := &Tape{
-		inventory: inv,
-		barcode:   protoTape.Barcode,
-		size:      protoTape.Size,
-		free:      protoTape.Free,
-		files:     make(map[string]*File, len(protoTape.Files)),
-	}
-
-	for _, protoFile := range protoTape.Files {
-		file := &File{
-			tape:         tape,
-			path:         protoFile.Path,
-			size:         protoFile.Size,
-			modifiedTime: protoFile.ModifiedTime.AsTime().UTC(),
-		}
-		file.path = util.StripLeadingSlashes(file.path)
-		tape.files[file.path] = file
-	}
-
-	return tape, nil
+	return tp, nil
 }
 
-func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
+func (t *tape) addDir(drive *drive.TapeDrive, path string) error {
 	entries, err := os.ReadDir(filepath.Join(drive.MountPoint(), path))
 	if err != nil {
 		return err
@@ -89,8 +67,8 @@ func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
 	return nil
 }
 
-func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
-	t.files = make(map[string]*File)
+func (t *tape) LoadFrom(drive *drive.TapeDrive) error {
+	t.Files = make(map[string]*ProtoFile)
 	err := t.reloadStats(drive)
 	if err != nil {
 		return err
@@ -104,7 +82,7 @@ func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
 	return t.save()
 }
 
-func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
+func (t *tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 	err := t.reloadStats(drive)
 	if err != nil {
 		return err
@@ -120,7 +98,7 @@ func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 	return t.save()
 }
 
-func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
+func (t *tape) addFile(drive *drive.TapeDrive, path string) error {
 	path = util.StripLeadingSlashes(path)
 
 	stat, err := os.Stat(filepath.Join(drive.MountPoint(), path))
@@ -128,18 +106,15 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	t.files[path] = &File{
-		tape: t,
-		path: path,
-
-		size:         stat.Size(),
-		modifiedTime: stat.ModTime().UTC(),
+	t.Files[path] = &ProtoFile{
+		Size:         stat.Size(),
+		ModifiedTime: timestamppb.New(stat.ModTime().UTC()),
 	}
 
 	return nil
 }
 
-func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
+func (t *tape) ReloadStats(drive *drive.TapeDrive) error {
 	err := t.reloadStats(drive)
 	if err != nil {
 		return err
@@ -148,21 +123,21 @@ func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
 	return t.save()
 }
 
-func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
+func (t *tape) reloadStats(drive *drive.TapeDrive) error {
 	var stat unix.Statfs_t
 	err := unix.Statfs(drive.MountPoint(), &stat)
 	if err != nil {
 		return err
 	}
 
-	t.size = int64(stat.Blocks) * int64(stat.Bsize)
-	t.free = int64(stat.Bfree) * int64(stat.Bsize)
+	t.Size = int64(stat.Blocks) * int64(stat.Bsize)
+	t.Free = int64(stat.Bfree) * int64(stat.Bsize)
 
 	return nil
 }
 
-func (t *Tape) save() error {
-	fh, err := os.Create(filepath.Join(t.inventory.path, t.barcode+".proto"))
+func (t *tape) save() error {
+	fh, err := os.Create(filepath.Join(t.inventory.path, t.Barcode+".proto"))
 	if err != nil {
 		return err
 	}
@@ -170,24 +145,17 @@ func (t *Tape) save() error {
 		_ = fh.Close()
 	}()
 
-	fileArray := make([]*ProtoFile, 0, len(t.files))
-	for _, file := range t.files {
-		fileArray = append(fileArray, &ProtoFile{
-			Path:         file.path,
-			Size:         file.size,
-			ModifiedTime: timestamppb.New(file.modifiedTime),
-		})
-	}
-
-	enc, err := proto.Marshal(&ProtoTape{
-		Barcode: t.barcode,
-		Size:    t.size,
-		Free:    t.free,
-		Files:   fileArray,
-	})
+	enc, err := proto.Marshal(&t.ProtoTape)
 	if err != nil {
 		return err
 	}
 	_, err = fh.Write(enc)
 	return err
+}
+
+func (t *tape) Equals(other Tape) bool {
+	if other == nil {
+		return false
+	}
+	return t.Barcode == other.GetBarcode()
 }

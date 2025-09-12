@@ -38,9 +38,8 @@ func (m *Manager) loadForSize(size int64) error {
 		return fmt.Errorf("failed to get volume tags: %v", err)
 	}
 
-	tapeMap := m.inventory.GetTapes()
 	for _, barcode := range volumeTags {
-		if tapeMap[barcode] == nil {
+		if !m.inventory.HasTape(barcode) {
 			// Found unused new tape!
 			return m.formatTapeKeepMounted(barcode)
 		}
@@ -49,13 +48,12 @@ func (m *Manager) loadForSize(size int64) error {
 	return nil
 }
 
-func (m *Manager) loadTape(tape *inventory.Tape) error {
-	barcode := tape.GetBarcode()
-	if m.currentTape != nil && m.currentTape.GetBarcode() == barcode {
+func (m *Manager) loadTape(tape inventory.Tape) error {
+	if tape.Equals(m.currentTape) {
 		return nil
 	}
 
-	log.Printf("Loading tape %s to drive %d", barcode, m.loaderDriveAddress)
+	log.Printf("Loading tape %s to drive %d", tape.GetBarcode(), m.loaderDriveAddress)
 
 	if DryRun {
 		m.currentTape = tape
@@ -67,17 +65,17 @@ func (m *Manager) loadTape(tape *inventory.Tape) error {
 		return fmt.Errorf("failed to unmount drive: %v", err)
 	}
 
-	err = m.loader.MoveTapeToDrive(m.loaderDriveAddress, barcode)
+	err = m.loader.MoveTapeToDrive(m.loaderDriveAddress, tape.GetBarcode())
 	if err != nil {
-		return fmt.Errorf("failed to move tape %s: %v", barcode, err)
+		return fmt.Errorf("failed to move tape %s: %v", tape.GetBarcode(), err)
 	}
 
 	m.currentTape = tape
 	return nil
 }
 
-func (m *Manager) loadAndMount(tape *inventory.Tape) error {
-	if m.currentTape != nil && m.currentTape.GetBarcode() == tape.GetBarcode() {
+func (m *Manager) loadAndMount(tape inventory.Tape) error {
+	if tape.Equals(m.currentTape) {
 		return nil
 	}
 
