@@ -6,13 +6,17 @@
 # than it just calculated, so it would cause a perma-diff in git which is very suboptimal
 latest_tag="$(git describe --tags --abbrev=0)"
 commits_since_tag="$(git rev-list --count "${latest_tag}..HEAD")"
-tag_suffix=""
 if [ -n "$(git status --porcelain)" ]; then
-  tag_suffix="dev"
+  commits_since_tag=$((commits_since_tag + 1))
+fi
+if [ "${commits_since_tag}" != "0" ]; then
+  # Increment last element on semver
+  IFS='.' read -r major minor patch <<< "${latest_tag}"
+  latest_tag="${major}.${minor}.$((patch + 1))-pre.${commits_since_tag}"
 fi
 
 pkgname=tapemgr
-pkgver="${latest_tag}.${commits_since_tag}${tag_suffix}"
+pkgver="${latest_tag}"
 pkgrel="1"
 pkgdesc='Tape backup manager'
 arch=('x86_64' 'arm64')
