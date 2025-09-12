@@ -95,19 +95,15 @@ func main() {
 
 	case "statistics":
 		for _, tape := range inv.GetTapesSortByFreeDesc() {
+			free := tape.GetFree()
+			size := tape.GetSize()
 			log.Printf(
 				"Tape: %s, Free: %s / %s (%d%% full)",
-				tape.Barcode,
-				util.FormatSize(tape.Free),
-				util.FormatSize(tape.Size),
-				(100*(tape.Size-tape.Free))/tape.Size,
+				tape.GetBarcode(),
+				util.FormatSize(free),
+				util.FormatSize(size),
+				(100*(size-free))/size,
 			)
-		}
-
-	case "upgrade-inventory":
-		err = inv.Save()
-		if err != nil {
-			log.Fatalf("Failed to re-save inventory: %v", err)
 		}
 
 	case "backup":
@@ -156,7 +152,7 @@ func main() {
 		}
 
 		err := fileManager.Restore(func(path string, info *inventory.File) bool {
-			return tapesMap[info.GetTape().Barcode]
+			return tapesMap[info.GetTape().GetBarcode()]
 		}, target)
 		if err != nil {
 			log.Fatalf("Failed to restore tapes: %v", err)

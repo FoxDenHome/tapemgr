@@ -15,7 +15,7 @@ const (
 )
 
 func (m *Manager) loadForSize(size int64) error {
-	if m.currentTape != nil && m.currentTape.Free >= size+TAPE_SIZE_SPARE {
+	if m.currentTape != nil && m.currentTape.GetFree() >= size+TAPE_SIZE_SPARE {
 		return nil
 	}
 
@@ -28,7 +28,7 @@ func (m *Manager) loadForSize(size int64) error {
 	}
 
 	for _, tape := range m.inventory.GetTapesSortByFreeDesc() {
-		if tape.Free >= size+TAPE_SIZE_NEW_SPARE {
+		if tape.GetFree() >= size+TAPE_SIZE_NEW_SPARE {
 			return m.loadAndMount(tape)
 		}
 	}
@@ -50,11 +50,12 @@ func (m *Manager) loadForSize(size int64) error {
 }
 
 func (m *Manager) loadTape(tape *inventory.Tape) error {
-	if m.currentTape != nil && m.currentTape.Barcode == tape.Barcode {
+	barcode := tape.GetBarcode()
+	if m.currentTape != nil && m.currentTape.GetBarcode() == barcode {
 		return nil
 	}
 
-	log.Printf("Loading tape %s to drive %d", tape.Barcode, m.loaderDriveAddress)
+	log.Printf("Loading tape %s to drive %d", barcode, m.loaderDriveAddress)
 
 	if DryRun {
 		m.currentTape = tape
@@ -66,9 +67,9 @@ func (m *Manager) loadTape(tape *inventory.Tape) error {
 		return fmt.Errorf("failed to unmount drive: %v", err)
 	}
 
-	err = m.loader.MoveTapeToDrive(m.loaderDriveAddress, tape.Barcode)
+	err = m.loader.MoveTapeToDrive(m.loaderDriveAddress, barcode)
 	if err != nil {
-		return fmt.Errorf("failed to move tape %s: %v", tape.Barcode, err)
+		return fmt.Errorf("failed to move tape %s: %v", barcode, err)
 	}
 
 	m.currentTape = tape
@@ -76,7 +77,7 @@ func (m *Manager) loadTape(tape *inventory.Tape) error {
 }
 
 func (m *Manager) loadAndMount(tape *inventory.Tape) error {
-	if m.currentTape != nil && m.currentTape.Barcode == tape.Barcode {
+	if m.currentTape != nil && m.currentTape.GetBarcode() == tape.GetBarcode() {
 		return nil
 	}
 
@@ -91,7 +92,7 @@ func (m *Manager) loadAndMount(tape *inventory.Tape) error {
 
 	err = m.drive.Mount()
 	if err != nil {
-		return fmt.Errorf("failed to mount tape %s in drive: %v", tape.Barcode, err)
+		return fmt.Errorf("failed to mount tape %s in drive: %v", tape.GetBarcode(), err)
 	}
 
 	return nil

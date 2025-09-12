@@ -19,8 +19,9 @@ func (m *Manager) ScanTape(barcode string) error {
 }
 
 func (m *Manager) scanCurrentTape() error {
-	log.Printf("Re-inventorying tape %s", m.currentTape.Barcode)
-	defer log.Printf("Finished re-inventorying tape %s", m.currentTape.Barcode)
+	barcode := m.currentTape.GetBarcode()
+	log.Printf("Re-inventorying tape %s", barcode)
+	defer log.Printf("Finished re-inventorying tape %s", barcode)
 	if DryRun {
 		return nil
 	}

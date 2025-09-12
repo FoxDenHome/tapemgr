@@ -137,7 +137,7 @@ func (m *Manager) backupFile(path string, handledFiles map[string]bool, bestFile
 
 	handledFiles[relPath] = true
 
-	if existingInfo != nil && (candidateInfo.ModTime().Sub(existingInfo.ModifiedTime)) < time.Second {
+	if existingInfo != nil && (candidateInfo.ModTime().Sub(existingInfo.GetModifiedTime())) < time.Second {
 		// log.Printf("[SKIP] %s", path)
 		return nil
 	}

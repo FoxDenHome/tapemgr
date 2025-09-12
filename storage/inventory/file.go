@@ -10,11 +10,10 @@ import (
 )
 
 type File struct {
-	ModifiedTime time.Time `json:"modified_time"`
-	Size         int64     `json:"size"`
-
-	tape *Tape
-	path string
+	tape         *Tape
+	path         string
+	modifiedTime time.Time
+	size         int64
 }
 
 type ExtendedFile struct {
@@ -25,11 +24,11 @@ type ExtendedFile struct {
 }
 
 func (i *File) isTombstone() bool {
-	return i.Size <= 0
+	return i.size <= 0
 }
 
 func (f *File) IsBetterThan(other *File) bool {
-	return f.ModifiedTime.After(other.ModifiedTime)
+	return f.modifiedTime.After(other.modifiedTime)
 }
 
 func (f *File) GetTape() *Tape {
@@ -38,6 +37,14 @@ func (f *File) GetTape() *Tape {
 
 func (f *File) GetPath() string {
 	return f.path
+}
+
+func (f *File) GetSize() int64 {
+	return f.size
+}
+
+func (f *File) GetModifiedTime() time.Time {
+	return f.modifiedTime
 }
 
 func (f *File) GetExtended(drive *drive.TapeDrive) (*ExtendedFile, error) {

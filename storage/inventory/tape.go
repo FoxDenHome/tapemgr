@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,10 +15,22 @@ import (
 type Tape struct {
 	inventory *Inventory
 
-	Barcode string           `json:"barcode"`
-	Files   map[string]*File `json:"files"`
-	Size    int64            `json:"size"`
-	Free    int64            `json:"free"`
+	barcode string
+	files   map[string]*File
+	size    int64
+	free    int64
+}
+
+func (t *Tape) GetBarcode() string {
+	return t.barcode
+}
+
+func (t *Tape) GetSize() int64 {
+	return t.size
+}
+
+func (t *Tape) GetFree() int64 {
+	return t.free
 }
 
 func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
@@ -37,54 +48,21 @@ func loadFromFileProto(inv *Inventory, filename string) (*Tape, error) {
 
 	tape := &Tape{
 		inventory: inv,
-		Barcode:   protoTape.Barcode,
-		Size:      protoTape.Size,
-		Free:      protoTape.Free,
-		Files:     make(map[string]*File, len(protoTape.Files)),
+		barcode:   protoTape.Barcode,
+		size:      protoTape.Size,
+		free:      protoTape.Free,
+		files:     make(map[string]*File, len(protoTape.Files)),
 	}
 
 	for _, protoFile := range protoTape.Files {
 		file := &File{
-			tape: tape,
-			path: protoFile.Path,
-
-			Size:         protoFile.Size,
-			ModifiedTime: protoFile.ModifiedTime.AsTime().UTC(),
+			tape:         tape,
+			path:         protoFile.Path,
+			size:         protoFile.Size,
+			modifiedTime: protoFile.ModifiedTime.AsTime().UTC(),
 		}
 		file.path = util.StripLeadingSlashes(file.path)
-		tape.Files[file.path] = file
-	}
-
-	return tape, nil
-}
-
-func loadFromFileJSON(inv *Inventory, filename string) (*Tape, error) {
-	fh, err := os.Open(filepath.Join(inv.path, filename))
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = fh.Close()
-	}()
-
-	tape := &Tape{
-		inventory: inv,
-	}
-	dec := json.NewDecoder(fh)
-	err = dec.Decode(tape)
-	if err != nil {
-		return nil, err
-	}
-
-	for path, file := range tape.Files {
-		strippedPath := util.StripLeadingSlashes(path)
-		if path != strippedPath {
-			path = strippedPath
-			delete(tape.Files, path)
-			tape.Files[path] = file
-		}
-		file.tape = tape
-		file.path = path
+		tape.files[file.path] = file
 	}
 
 	return tape, nil
@@ -112,7 +90,7 @@ func (t *Tape) addDir(drive *drive.TapeDrive, path string) error {
 }
 
 func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
-	t.Files = make(map[string]*File)
+	t.files = make(map[string]*File)
 	err := t.reloadStats(drive)
 	if err != nil {
 		return err
@@ -123,7 +101,7 @@ func (t *Tape) LoadFrom(drive *drive.TapeDrive) error {
 		return err
 	}
 
-	return t.Save()
+	return t.save()
 }
 
 func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
@@ -139,7 +117,7 @@ func (t *Tape) AddFiles(drive *drive.TapeDrive, path ...string) error {
 		}
 	}
 
-	return t.Save()
+	return t.save()
 }
 
 func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
@@ -150,12 +128,12 @@ func (t *Tape) addFile(drive *drive.TapeDrive, path string) error {
 		return err
 	}
 
-	t.Files[path] = &File{
+	t.files[path] = &File{
 		tape: t,
 		path: path,
 
-		Size:         stat.Size(),
-		ModifiedTime: stat.ModTime().UTC(),
+		size:         stat.Size(),
+		modifiedTime: stat.ModTime().UTC(),
 	}
 
 	return nil
@@ -167,7 +145,7 @@ func (t *Tape) ReloadStats(drive *drive.TapeDrive) error {
 		return err
 	}
 
-	return t.Save()
+	return t.save()
 }
 
 func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
@@ -177,14 +155,14 @@ func (t *Tape) reloadStats(drive *drive.TapeDrive) error {
 		return err
 	}
 
-	t.Size = int64(stat.Blocks) * int64(stat.Bsize)
-	t.Free = int64(stat.Bfree) * int64(stat.Bsize)
+	t.size = int64(stat.Blocks) * int64(stat.Bsize)
+	t.free = int64(stat.Bfree) * int64(stat.Bsize)
 
 	return nil
 }
 
-func (t *Tape) Save() error {
-	fh, err := os.Create(filepath.Join(t.inventory.path, t.Barcode+".proto"))
+func (t *Tape) save() error {
+	fh, err := os.Create(filepath.Join(t.inventory.path, t.barcode+".proto"))
 	if err != nil {
 		return err
 	}
@@ -192,19 +170,19 @@ func (t *Tape) Save() error {
 		_ = fh.Close()
 	}()
 
-	fileArray := make([]*ProtoFile, 0, len(t.Files))
-	for _, file := range t.Files {
+	fileArray := make([]*ProtoFile, 0, len(t.files))
+	for _, file := range t.files {
 		fileArray = append(fileArray, &ProtoFile{
 			Path:         file.path,
-			Size:         file.Size,
-			ModifiedTime: timestamppb.New(file.ModifiedTime),
+			Size:         file.size,
+			ModifiedTime: timestamppb.New(file.modifiedTime),
 		})
 	}
 
 	enc, err := proto.Marshal(&ProtoTape{
-		Barcode: t.Barcode,
-		Size:    t.Size,
-		Free:    t.Free,
+		Barcode: t.barcode,
+		Size:    t.size,
+		Free:    t.free,
 		Files:   fileArray,
 	})
 	if err != nil {

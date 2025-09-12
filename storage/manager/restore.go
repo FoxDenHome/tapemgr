@@ -32,10 +32,11 @@ func (m *Manager) Restore(filter FilterFunc, target string) error {
 			continue
 		}
 		tape := file.GetTape()
-		if _, ok := allFileMap[tape.Barcode]; !ok {
-			allFileMap[tape.Barcode] = make(map[string]*inventory.File)
+		barcode := tape.GetBarcode()
+		if _, ok := allFileMap[barcode]; !ok {
+			allFileMap[barcode] = make(map[string]*inventory.File)
 		}
-		allFileMap[tape.Barcode][decryptedPath] = file
+		allFileMap[barcode][decryptedPath] = file
 	}
 
 	for barcode, filesMap := range allFileMap {
