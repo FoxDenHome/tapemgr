@@ -6,13 +6,14 @@ import (
 )
 
 type Config struct {
-	LoaderDevice string `json:"loader-device"`
-	DriveDevice  string `json:"drive-device"`
-	TapeMount    string `json:"tape-mount"`
-	TapeFileKey  string `json:"tape-file-key"`
-	TapePathKey  string `json:"tape-path-key"`
-	TapesPath    string `json:"tapes-path"`
-	DryRun       bool   `json:"dry-run"`
+	LoaderDevice string   `json:"loader-device"`
+	DriveDevice  string   `json:"drive-device"`
+	TapeMount    string   `json:"tape-mount"`
+	TapeFileKey  string   `json:"tape-file-key"`
+	TapePathKey  string   `json:"tape-path-key"`
+	TapesPath    string   `json:"tapes-path"`
+	DryRun       bool     `json:"dry-run"`
+	Targets      []string `json:"targets"`
 }
 
 func loadConfig(path string) (Config, error) {

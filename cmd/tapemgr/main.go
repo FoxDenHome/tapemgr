@@ -114,8 +114,7 @@ func main() {
 	case "backup":
 		defer putLibraryToIdle()
 
-		targets := flag.Args()
-		err = fileManager.Backup(targets...)
+		err = fileManager.Backup(config.Targets...)
 		if err != nil {
 			log.Fatalf("Failed to backup: %v", err)
 		}
