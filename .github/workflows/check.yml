@@ -1,8 +1,10 @@
+name: Check
+
 on:
   pull_request:
   push:
-
-name: Check
+    branches:
+      - main
 
 permissions:
   contents: read
