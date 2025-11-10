@@ -12,7 +12,7 @@
           pname = "tapemgr";
           version = "1.0.0";
           src = ./.;
-          vendorHash = "sha256-yLG9GbvJ/U8CS2rJgIy2aP4+Oj386HQ6TpmlGWVqrpg=";
+          vendorHash = "sha256-RlZWXxJcNHc7WeJ7kIHCeOiYi3JrkT/0UTeYdsyUuoU=";
           buildInputs = [];
         };
 
